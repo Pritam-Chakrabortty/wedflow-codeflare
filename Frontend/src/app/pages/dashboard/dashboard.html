@@ -15,8 +15,13 @@
     </svg>
     <h5 class="attention-title">Attention needed</h5>
     <div class="attention-body">
-      <span>{{ bookingsNeedingCrew() }} booking(s) need crew assignment.</span>
-      <span>{{ paymentsNeedingFollowUp() }} payment item(s) need follow-up.</span>
+      <ng-container *ngIf="!isLoadingSummary()">
+        <span>{{ bookingsNeedingCrew() }} booking(s) need crew assignment.</span>
+        <span>{{ paymentsNeedingFollowUp() }} payment item(s) need follow-up.</span>
+      </ng-container>
+      <ng-container *ngIf="isLoadingSummary()">
+        <span class="skeleton-line" style="width: 260px; height: 1rem;"></span>
+      </ng-container>
       <a routerLink="/crew-assignments">
         <button class="btn-solid btn-xs" type="button">Open crew board</button>
       </a>
@@ -28,7 +33,7 @@
 
   <!-- Stat cards -->
   <div class="stat-grid">
-    <a [routerLink]="card.link" class="stat-card-link" *ngFor="let card of statCards">
+    <a [routerLink]="card.link" class="stat-card-link" *ngFor="let card of statCards()">
       <div class="stat-card" [class.highlighted]="card.highlighted">
         <div class="stat-card-head">
           <span class="stat-label">{{ card.label }}</span>
@@ -73,8 +78,14 @@
             </ng-container>
           </div>
         </div>
-        <div class="stat-value" [ngClass]="'color-' + card.valueColor">{{ card.value }}</div>
-        <p class="stat-subtext">{{ card.subtext }}</p>
+        <div class="stat-value" [ngClass]="'color-' + card.valueColor">
+          <span *ngIf="!isLoadingSummary()">{{ card.value }}</span>
+          <span *ngIf="isLoadingSummary()" class="skeleton-line skeleton-line--lg"></span>
+        </div>
+        <p class="stat-subtext">
+          <span *ngIf="!isLoadingSummary()">{{ card.subtext }}</span>
+          <span *ngIf="isLoadingSummary()" class="skeleton-line skeleton-line--sm"></span>
+        </p>
       </div>
     </a>
   </div>
@@ -136,7 +147,7 @@
     <div class="calendar-filters">
       <input class="input-field" type="text" placeholder="Search client, venue, package..." [ngModel]="searchTerm()"
         (ngModelChange)="searchTerm.set($event)" />
-      <input class="input-field" type="date" value="2026-08-12" />
+      <input class="input-field" type="date" />
       <button class="select-btn full" type="button" role="combobox">
         <span>All statuses</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -226,18 +237,19 @@
       <div class="filtered-head">
         <div>
           <div class="filtered-title">Filtered Events In {{ monthLabel() }} {{ yearLabel() }}</div>
-          <div class="filtered-subtitle">{{ filteredEvents.length }} booking match current filters</div>
+          <div class="filtered-subtitle">{{ allMonthEvents().length }} booking(s) match current filters</div>
         </div>
       </div>
       <div class="filtered-grid">
-        <a [routerLink]="'/bookings/' + event.id" class="filtered-card-link" *ngFor="let event of filteredEvents">
+        <a [routerLink]="'/bookings/' + event.id" class="filtered-card-link" *ngFor="let event of allMonthEvents()">
           <div class="filtered-card">
             <div class="filtered-card-inner">
               <div class="filtered-card-info">
                 <div class="filtered-name">{{ event.name }}</div>
-                <div class="filtered-meta">{{ event.date }} · {{ event.location }}</div>
+                <div class="filtered-meta">{{ event.packageName }} · {{ event.location }}</div>
               </div>
-              <div class="badge">Crew</div>
+              <div class="badge" *ngIf="event.needsCrew" style="background: rgba(98, 24, 24, 0.4); color: #f87171;">Needs Crew</div>
+              <div class="badge" *ngIf="!event.needsCrew" style="background: rgba(31, 71, 31, 0.4); color: #4ade80;">Crew Assigned</div>
             </div>
           </div>
         </a>
@@ -264,7 +276,26 @@
         </div>
       </div>
       <div class="card-body">
-        <div class="empty-center">No upcoming events.</div>
+        <div class="empty-center" *ngIf="upcomingEventsList().length === 0">No upcoming events.</div>
+        <div class="action-item" *ngFor="let item of upcomingEventsList()">
+          <div class="action-icon-wrap">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="lucide lucide-calendar action-icon" aria-hidden="true">
+              <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+              <line x1="16" x2="16" y1="2" y2="6"></line>
+              <line x1="8" x2="8" y1="2" y2="6"></line>
+              <line x1="3" x2="21" y1="10" y2="10"></line>
+            </svg>
+          </div>
+          <div class="action-info">
+            <div class="action-title">{{ item.client_name || item.event_name }}</div>
+            <div class="action-detail">{{ item.event_date | date:'dd-MM-yyyy' }} · {{ item.venue || 'N/A' }}</div>
+          </div>
+          <a [routerLink]="'/bookings/' + item.booking_id">
+            <button class="btn-link" type="button">View</button>
+          </a>
+        </div>
       </div>
     </div>
 
@@ -282,7 +313,8 @@
         </div>
       </div>
       <div class="card-body">
-        <div class="action-item" *ngFor="let item of actionItems">
+        <div class="empty-center" *ngIf="actionItems().length === 0">No action items pending.</div>
+        <div class="action-item" *ngFor="let item of actionItems()">
           <div class="action-icon-wrap" [class.danger]="item.urgent">
             <svg *ngIf="item.type === 'payment'" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"

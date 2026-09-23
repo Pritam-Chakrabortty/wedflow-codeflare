@@ -35,6 +35,7 @@ interface WorkflowStageDef {
   number: number;
   name: string;
   description: string;
+  dbStage: string; // Database stage name
 }
 
 const WORKFLOW_STAGES: WorkflowStageDef[] = [
@@ -42,108 +43,129 @@ const WORKFLOW_STAGES: WorkflowStageDef[] = [
     number: 1,
     name: 'Booking Confirmed',
     description: 'The customer has accepted the booking and the event dates are reserved.',
+    dbStage: 'booking',
   },
   {
     number: 2,
     name: 'Advance Received',
     description: 'The booking advance has been received and recorded.',
+    dbStage: 'booking',
   },
   {
     number: 3,
     name: 'Contract Signed',
     description: 'The customer and company have completed the booking agreement.',
+    dbStage: 'booking',
   },
   {
     number: 4,
     name: 'Planning Stage',
     description:
       'Event schedule, venue, customer requirements, and deliverables are being finalized.',
+    dbStage: 'planning',
   },
   {
     number: 5,
     name: 'Crew Assigned',
     description:
       'Photographers, videographers, and other required team members have been assigned.',
+    dbStage: 'planning',
   },
   {
     number: 6,
     name: 'Pre-Wedding Scheduled',
     description: 'The optional pre-wedding shoot has been scheduled.',
+    dbStage: 'production',
   },
   {
     number: 7,
     name: 'Event Completed',
     description: 'The event-day photography or videography work has been completed.',
+    dbStage: 'production',
   },
   {
     number: 8,
     name: 'Data Received',
     description: 'The captured photos and videos have been received and are ready for backup.',
+    dbStage: 'post_production',
   },
   {
     number: 9,
     name: 'Editing Assigned',
     description: 'The post-production work has been assigned to the appropriate editor.',
+    dbStage: 'post_production',
   },
   {
     number: 10,
     name: 'Editing In Progress',
     description: 'The assigned editor is currently working on the photos or videos.',
+    dbStage: 'post_production',
   },
   {
     number: 11,
     name: 'QC Review',
     description: 'The company is checking the edited work before sharing it with the customer.',
+    dbStage: 'qc',
   },
   {
     number: 12,
     name: 'Client Review',
     description: 'A preview has been shared with the customer for review and approval.',
+    dbStage: 'client_review',
   },
   {
     number: 13,
     name: 'Revision Requested',
     description: 'The customer or quality team has requested changes to the edited work.',
+    dbStage: 'revision',
   },
   {
     number: 14,
     name: 'Payment Pending',
     description: 'A remaining customer payment is due before final delivery.',
+    dbStage: 'delivery',
   },
   {
     number: 15,
     name: 'Full Payment Received',
     description: 'All payments for this booking have been received.',
+    dbStage: 'delivery',
   },
   {
     number: 16,
     name: 'Album Designing',
     description: 'The album layout and design are being prepared.',
+    dbStage: 'album',
   },
   {
     number: 17,
     name: 'Album Printing',
     description: 'The approved album has been sent for printing.',
+    dbStage: 'album',
   },
   {
     number: 18,
     name: 'Ready For Delivery',
     description: 'All final items are prepared and waiting to be delivered.',
+    dbStage: 'delivery',
   },
   {
     number: 19,
     name: 'Delivered',
     description: 'The final photos, videos, album, or other items have been delivered.',
+    dbStage: 'delivery',
   },
   {
     number: 20,
     name: 'Completed',
     description: 'All work, payments, and deliveries for this booking are complete.',
+    dbStage: 'completed',
   },
   {
     number: 21,
     name: 'Archived',
     description: 'The completed booking has been moved to the archive for future reference.',
+    dbStage: 'completed',
   },
 ];
 
@@ -173,8 +195,15 @@ export class BookingDetail implements OnInit {
   private toastTimeout: any;
 
   get currentStageNumber(): number {
-    const stage = WORKFLOW_STAGES.find((s) => s.name === this.booking?.current_workflow_stage);
+    const dbStage = this.booking?.current_workflow_stage || 'booking';
+    const stage = WORKFLOW_STAGES.find((s) => s.dbStage === dbStage);
     return stage?.number ?? 1;
+  }
+
+  get currentStageName(): string {
+    const dbStage = this.booking?.current_workflow_stage || 'booking';
+    const stage = WORKFLOW_STAGES.find((s) => s.dbStage === dbStage);
+    return stage?.name || 'Booking Confirmed';
   }
 
   get stagePercent(): number {
@@ -210,317 +239,7 @@ export class BookingDetail implements OnInit {
     private cdr: ChangeDetectorRef,
   ) {}
 
-  // TEMPORARY DUMMY DATA — for UI testing only. Remove once backend confirmed working.
-  private mockBooking: Booking = {
-    id: 'mock-1',
-    booking_number: 'DRVSTU-BKG-000009',
-    booking_date: '2026-01-10',
-    event_date: '2026-06-13',
-    client_id: 'client-1',
-    client_name: 'Arnab',
-    package_id: 'pkg-1',
-    package_name: 'Royal Wedding Package',
-    total_amount: 350000,
-    status: 'confirmed',
-    current_workflow_stage: 'Full Payment Received',
-    venue: 'ITC',
-    notes: null,
-    amount_paid: 665000,
-    event_days: [
-      { id: 'e1', event_name: 'Mehendi', event_date: '2026-06-13', venue: 'ITC' },
-      { id: 'e2', event_name: 'Wedding', event_date: '2026-06-14', venue: 'ITC' },
-      { id: 'e3', event_name: 'Reception', event_date: '2026-06-15', venue: 'ITC' },
-    ],
-    package_crew_plan: [
-      {
-        day_number: 1,
-        event_type: 'Mehendi',
-        roles: [
-          { role: 'Photographer', quantity: 3 },
-          { role: 'Cinematographer', quantity: 2 },
-        ],
-      },
-      {
-        day_number: 2,
-        event_type: 'Wedding',
-        roles: [
-          { role: 'Photographer', quantity: 3 },
-          { role: 'Cinematographer', quantity: 1 },
-          { role: 'Drone Operator', quantity: 1 },
-        ],
-      },
-      {
-        day_number: 3,
-        event_type: 'Reception',
-        roles: [{ role: 'Photographer', quantity: 2 }],
-      },
-    ],
-    crew_assignments: [
-      {
-        id: 'a1',
-        staff_name: 'Rohan Gupta',
-        assigned_role: 'Photographer',
-        event_name: 'Mehendi',
-        event_date: '2026-06-13',
-        event_time: '10:00 am',
-        venue: 'ITC',
-        status: 'assigned',
-        is_full_day: true,
-        is_notified: true,
-        handover_status: 'submitted',
-        files_status: 'submitted',
-        submitted_at: '10 Jun, 2:49 AM',
-      },
-      {
-        id: 'a2',
-        staff_name: 'Akash Sarkar',
-        assigned_role: 'Photographer',
-        event_name: 'Mehendi',
-        event_date: '2026-06-13',
-        venue: 'ITC',
-        status: 'assigned',
-        is_full_day: true,
-        is_notified: true,
-        handover_status: 'pending',
-        files_status: 'pending',
-        submitted_at: null,
-      },
-      {
-        id: 'a3',
-        staff_name: 'Rohan Gupta',
-        assigned_role: 'Photographer',
-        event_name: 'Wedding',
-        event_date: '2026-06-14',
-        venue: 'ITC',
-        status: 'assigned',
-        is_full_day: true,
-        is_notified: true,
-        handover_status: 'pending',
-        files_status: 'pending',
-        submitted_at: null,
-      },
-      {
-        id: 'a4',
-        staff_name: 'Akash Sarkar',
-        assigned_role: 'Photographer',
-        event_name: 'Reception',
-        event_date: '2026-06-15',
-        venue: 'ITC',
-        status: 'assigned',
-        is_full_day: true,
-        is_notified: true,
-        handover_status: 'pending',
-        files_status: 'pending',
-        submitted_at: null,
-      },
-      {
-        id: 'a5',
-        staff_name: 'Rohan Gupta',
-        assigned_role: 'Photographer',
-        event_name: 'Reception',
-        event_date: '2026-06-15',
-        venue: 'ITC',
-        status: 'assigned',
-        is_full_day: true,
-        is_notified: true,
-        handover_status: 'pending',
-        files_status: 'pending',
-        submitted_at: null,
-      },
-      {
-        id: 'a6',
-        staff_name: 'Kathakali Mondal',
-        assigned_role: 'Cinematographer',
-        event_name: 'Wedding',
-        event_date: '2026-06-14',
-        venue: 'ITC',
-        status: 'assigned',
-        is_full_day: true,
-        is_notified: true,
-        handover_status: 'pending',
-        files_status: 'pending',
-        submitted_at: null,
-      },
-      {
-        id: 'a7',
-        staff_name: 'fjdfjhjd',
-        assigned_role: 'Cinematographer',
-        event_name: 'Mehendi',
-        event_date: '2026-06-13',
-        venue: 'ITC',
-        status: 'assigned',
-        is_full_day: true,
-        is_notified: true,
-        handover_status: 'pending',
-        files_status: 'pending',
-        submitted_at: null,
-      },
-      {
-        id: 'a8',
-        staff_name: 'Akash Sarkar',
-        assigned_role: 'Photographer',
-        event_name: 'Wedding',
-        event_date: '2026-06-14',
-        venue: 'ITC',
-        status: 'assigned',
-        is_full_day: true,
-        is_notified: true,
-        handover_status: 'pending',
-        files_status: 'pending',
-        submitted_at: null,
-      },
-      {
-        id: 'a9',
-        staff_name: 'Kathakali Mondal',
-        assigned_role: 'Cinematographer',
-        event_name: 'Mehendi',
-        event_date: '2026-06-13',
-        venue: 'ITC',
-        status: 'assigned',
-        is_full_day: true,
-        is_notified: true,
-        handover_status: 'pending',
-        files_status: 'pending',
-        submitted_at: null,
-      },
-      {
-        id: 'a10',
-        staff_name: 'ytewtywty',
-        assigned_role: 'Photographer',
-        event_name: 'Wedding',
-        event_date: '2026-06-14',
-        venue: 'ITC',
-        status: 'assigned',
-        is_full_day: true,
-        is_notified: true,
-        handover_status: 'pending',
-        files_status: 'pending',
-        submitted_at: null,
-      },
-    ],
-    payment_schedule: [
-      {
-        id: 'p1',
-        installment_name: 'Advance',
-        amount: 105000,
-        due_date: '2026-06-13',
-        paid_date: '2026-06-30',
-        status: 'Approved',
-        notes: null,
-      },
-      {
-        id: 'p2',
-        installment_name: 'Advance',
-        amount: 105000,
-        due_date: '2026-06-10',
-        paid_date: '2026-06-30',
-        status: 'Approved',
-        notes: null,
-      },
-      {
-        id: 'p3',
-        installment_name: 'Advance',
-        amount: 105000,
-        due_date: '2026-06-14',
-        paid_date: '2026-06-30',
-        status: 'Approved',
-        notes: null,
-      },
-      {
-        id: 'p4',
-        installment_name: 'Advance',
-        amount: 350000,
-        due_date: '2026-06-10',
-        paid_date: '2026-06-30',
-        status: 'Approved',
-        notes: null,
-      },
-    ],
-    deliveries: [
-      {
-        id: 'd1',
-        type: '15-20 Minute Cinematic Wedding Film',
-        description: '15-20 Minute Cinematic Wedding Film',
-        due_date: null,
-        status: 'Pending',
-        delivered_date: null,
-        notes: null,
-      },
-      {
-        id: 'd2',
-        type: 'Drone Coverage for Outdoor Events',
-        description: 'Drone Coverage for Outdoor Events',
-        due_date: null,
-        status: 'Pending',
-        delivered_date: null,
-        notes: null,
-      },
-      {
-        id: 'd3',
-        type: 'Same-Day Instagram Reels (3-5)',
-        description: 'Same-Day Instagram Reels (3-5)',
-        due_date: null,
-        status: 'Delivered',
-        delivered_date: '2026-06-30',
-        notes: null,
-      },
-      {
-        id: 'd4',
-        type: '4K Wedding Highlight Video (5-7 Minutes)',
-        description: '4K Wedding Highlight Video (5-7 Minutes)',
-        due_date: null,
-        status: 'Pending',
-        delivered_date: null,
-        notes: null,
-      },
-      {
-        id: 'd5',
-        type: 'Pre-Wedding Photoshoot (1 Day)',
-        description: 'Pre-Wedding Photoshoot (1 Day)',
-        due_date: null,
-        status: 'Delivered',
-        delivered_date: '2026-06-10',
-        notes: null,
-      },
-      {
-        id: 'd6',
-        type: 'Premium Designer Wedding Album (40 Sheets)',
-        description: 'Premium Designer Wedding Album (40 Sheets)',
-        due_date: null,
-        status: 'Delivered',
-        delivered_date: '2026-06-10',
-        notes: null,
-      },
-      {
-        id: 'd7',
-        type: 'All Raw Photos & Videos',
-        description: 'All Raw Photos & Videos',
-        due_date: null,
-        status: 'In Progress',
-        delivered_date: null,
-        notes: null,
-      },
-      {
-        id: 'd8',
-        type: '500+ Professionally Edited Photos',
-        description: '500+ Professionally Edited Photos',
-        due_date: null,
-        status: 'Pending',
-        delivered_date: null,
-        notes: null,
-      },
-      {
-        id: 'd9',
-        type: 'Cloud Storage Access for 1 Year',
-        description: 'Cloud Storage Access for 1 Year',
-        due_date: null,
-        status: 'Pending',
-        delivered_date: null,
-        notes: null,
-      },
-    ],
-        reminders: [],
-  };
+
 
   ngOnInit(): void {
     const bookingId = this.route.snapshot.paramMap.get('id');
@@ -530,10 +249,14 @@ export class BookingDetail implements OnInit {
       return;
     }
 
+    console.log('Loading booking with ID:', bookingId);
+
     this.bookingService.getBookingById(bookingId).subscribe({
       next: (response) => {
+        console.log('Booking response:', response);
         // Map backend response to frontend format
         this.booking = this.bookingService.mapBackendToBooking(response.booking);
+        console.log('Mapped booking:', this.booking);
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -586,8 +309,31 @@ export class BookingDetail implements OnInit {
   }
 
   workflowBadgeClass(stage: string | undefined): string {
-    if (stage === 'Full Payment Received') return 'badge-success';
+    if (stage === 'Full Payment Received' || stage === 'Completed') return 'badge-success';
     return 'badge-neutral';
+  }
+
+  updateWorkflowStage(stageName: string): void {
+    if (!this.booking) return;
+    
+    const stageDef = WORKFLOW_STAGES.find(s => s.name === stageName);
+    if (!stageDef) return;
+    
+    this.bookingService.updateBooking(this.booking.id, {
+      current_workflow_stage: stageDef.dbStage
+    }).subscribe({
+      next: (response) => {
+        if (this.booking) {
+          this.booking.current_workflow_stage = stageDef.dbStage;
+          this.cdr.detectChanges();
+        }
+        this.showToast('Stage Updated', `Workflow stage updated to ${stageName}`);
+      },
+      error: (error) => {
+        console.error('Error updating workflow stage:', error);
+        this.showToast('Error', 'Failed to update workflow stage');
+      }
+    });
   }
 
   private showToast(
@@ -595,11 +341,16 @@ export class BookingDetail implements OnInit {
     message: string,
     variant: 'success' | 'error' = 'success',
   ): void {
-    this.toastTitle = title;
-    this.toastMsg = message;
-    this.toastVariant = variant;
-    this.toastVisible = true;
     clearTimeout(this.toastTimeout);
+
+    setTimeout(() => {
+      this.toastTitle = title;
+      this.toastMsg = message;
+      this.toastVariant = variant;
+      this.toastVisible = true;
+      this.cdr.detectChanges();
+    }, 0);
+
     this.toastTimeout = setTimeout(() => {
       this.toastVisible = false;
       this.cdr.detectChanges();
@@ -682,32 +433,39 @@ export class BookingDetail implements OnInit {
     }).subscribe({
       next: (response) => {
         console.log('BookingDetail: API response:', response);
-        // Add the new assignment to local booking data
+        const returned = response.crewAssignment || response.assignment || {};
+        const matchedEventDay = this.booking?.event_days?.find((e) => e.id === data.eventDayId);
+
         const newAssignment: CrewAssignment = {
-          id: response.crewAssignment?.id ?? response.assignment?.id ?? `${data.eventDayId}-${data.staffId}`,
-          staff_name: data.staffName,
-          assigned_role: data.role,
-          event_name: data.eventName,
-          event_date: data.eventDate ?? '',
-          event_time: data.reportTime,
-          venue: data.reportLocation || data.venue,
-          status: 'assigned',
+          id: returned.id ?? `${data.eventDayId}-${data.staffId}-${Date.now()}`,
+          staff_name: returned.staff_name || data.staffName || 'Crew Member',
+          assigned_role: returned.assigned_role || data.role,
+          event_name: returned.event_name || data.eventName || matchedEventDay?.event_name || '',
+          event_date: returned.event_date || data.eventDate || matchedEventDay?.event_date || '',
+          event_time: returned.start_time || data.reportTime,
+          venue: returned.venue || data.reportLocation || data.venue || matchedEventDay?.venue || null,
+          status: returned.status || 'assigned',
           is_full_day: data.shift === 'full_day',
           is_notified: false,
           handover_status: 'pending',
           files_status: 'pending',
           submitted_at: null,
         };
+
         if (this.booking) {
-          this.booking.crew_assignments = [...(this.booking.crew_assignments ?? []), newAssignment];
+          this.booking = {
+            ...this.booking,
+            crew_assignments: [...(this.booking.crew_assignments ?? []), newAssignment],
+          };
           this.cdr.detectChanges(); // ✅ FIX: Force UI refresh
         }
-        this.showToast('Crew assigned', `${data.staffName} has been assigned as ${data.role}.`);
+        this.showToast('Crew assigned', `${newAssignment.staff_name} has been assigned as ${newAssignment.assigned_role}.`);
       },
       error: (error) => {
         console.error('BookingDetail: Error assigning crew:', error);
-        this.showToast('Error', 'Failed to assign crew member');
-      }
+        console.error('Error details:', error.error, error.message, error.status);
+        this.showToast('Error', `Failed to assign crew member: ${error.message || error.status || 'Unknown error'}`, 'error');
+      },
     });
   }
 

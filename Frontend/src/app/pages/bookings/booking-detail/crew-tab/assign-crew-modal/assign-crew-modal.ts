@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Booking, BookingEvent, CrewAssignment, StaffMember } from '../../../../../services/booking.service';
@@ -25,7 +25,7 @@ export interface NewAssignmentData {
   styleUrl: './assign-crew-modal.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AssignCrewModal implements OnChanges {
+export class AssignCrewModal implements OnInit, OnChanges {
   private bookingService = inject(BookingService);
   private cdr = inject(ChangeDetectorRef);
   @Input({ required: true }) booking!: Booking;
@@ -68,16 +68,24 @@ export class AssignCrewModal implements OnChanges {
   staffTouched = false;
   roleTouched = false;
 
+  ngOnInit(): void {
+    this.initData();
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     console.log('AssignCrewModal ngOnChanges:', changes);
     if (changes['initialEventDayId'] || changes['initialRole'] || changes['booking']) {
-      this.selectedEventDayId = this.initialEventDayId ?? (this.booking?.event_days?.[0]?.id ?? '');
-      this.role = this.initialRole ?? (this.roles[0] ?? '');
-      this.reportLocation = this.selectedEventDay?.venue ?? '';
-      console.log('Loading staff with role:', this.role);
-      this.clearCache();
-      this.loadStaff();
+      this.initData();
     }
+  }
+
+  private initData(): void {
+    this.selectedEventDayId = this.initialEventDayId ?? (this.booking?.event_days?.[0]?.id ?? '');
+    this.role = this.initialRole ?? (this.roles[0] ?? '');
+    this.reportLocation = this.selectedEventDay?.venue ?? '';
+    console.log('Loading staff with role:', this.role);
+    this.clearCache();
+    this.loadStaff();
   }
 
   private clearCache(): void {

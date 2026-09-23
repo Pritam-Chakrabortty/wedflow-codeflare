@@ -1,25 +1,10 @@
-﻿import { Component, signal, computed, OnInit } from '@angular/core';
+import { Component, signal, computed, OnInit, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WorkAssignmentModal, WorkRequest } from './work-assignment-modal/work-assignment-modal';
-import { MarketplaceService } from '../../services/marketplace.service';
-import type { Professional as ServiceProfessional } from '../../services/marketplace.service';
-
-interface Professional {
-  id: string;
-  initials: string;
-  name: string;
-  verified: boolean;
-  type: 'Individual' | 'Team';
-  experienceYears: number;
-  city: string;
-  state: string;
-  skills: string[];
-  summary: string;
-  availableRate: number;
-  email: string;
-  phone: string;
-}
+import { WorkBriefModal } from './work-brief-modal/work-brief-modal';
+import { AddProfileModal } from './add-profile-modal/add-profile-modal';
+import { MarketplaceService, Professional } from '../../services/marketplace.service';
 
 type ServiceFilter =
   | 'all'
@@ -36,13 +21,10 @@ type ServiceFilter =
 
 type TypeFilter = 'all' | 'individual' | 'team';
 
-// Local interface for the component to match the service interface
-interface Professional extends ServiceProfessional {}
-
 @Component({
   selector: 'app-marketplace',
   standalone: true,
-  imports: [CommonModule, FormsModule, WorkAssignmentModal],
+  imports: [CommonModule, FormsModule, WorkAssignmentModal, WorkBriefModal, AddProfileModal],
   templateUrl: './marketplace.html',
   styleUrl: './marketplace.scss'
 })
@@ -60,10 +42,26 @@ export class Marketplace implements OnInit {
   showAssignmentModal = signal(false);
   selectedWorkRequest = signal<WorkRequest | null>(null);
 
+  showBriefModal = signal(false);
+  selectedProfessionalForBrief = signal<Professional | null>(null);
+
+  showAddProfileModal = signal(false);
+
   isLoading = signal(false);
   error = signal<string | null>(null);
 
-  constructor(private marketplaceService: MarketplaceService) {}
+  constructor(
+    private marketplaceService: MarketplaceService,
+    private elementRef: ElementRef
+  ) {}
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (!this.elementRef.nativeElement.contains(event.target)) {
+      this.isServiceMenuOpen.set(false);
+      this.isTypeMenuOpen.set(false);
+    }
+  }
 
   ngOnInit() {
     this.loadMarketplaceData();
@@ -106,29 +104,28 @@ export class Marketplace implements OnInit {
           }));
           this.workRequests.set(transformedRequests);
         } else {
-          this.error.set('Failed to load work requests');
+          console.error('Failed to load work requests');
         }
       },
       error: (err) => {
         console.error('Error loading work requests:', err);
-        this.error.set('Failed to load work requests');
       }
     });
   }
 
- serviceOptions: { value: ServiceFilter; label: string }[] = [
-  { value: 'all', label: 'All services' },
-  { value: 'photographer', label: 'Wedding Photographer' },
-  { value: 'cinematographer', label: 'Cinematographer' },
-  { value: 'videographer', label: 'Traditional Videographer' },
-  { value: 'drone_operator', label: 'Drone Operator' },
-  { value: 'photo_editor', label: 'Photo Editor' },
-  { value: 'video_editor', label: 'Video Editor' },
-  { value: 'album_designer', label: 'Album Designer' }, 
-  { value: 'live_streaming_team', label: 'Live Streaming Team' },
-  { value: 'lighting_team', label: 'Lighting Team' },
-  { value: 'other', label: 'Other' }
-];
+  serviceOptions: { value: ServiceFilter; label: string }[] = [
+    { value: 'all', label: 'All services' },
+    { value: 'photographer', label: 'Wedding Photographer' },
+    { value: 'cinematographer', label: 'Cinematographer' },
+    { value: 'videographer', label: 'Traditional Videographer' },
+    { value: 'drone_operator', label: 'Drone Operator' },
+    { value: 'photo_editor', label: 'Photo Editor' },
+    { value: 'video_editor', label: 'Video Editor' },
+    { value: 'album_designer', label: 'Album Designer' }, 
+    { value: 'live_streaming_team', label: 'Live Streaming Team' },
+    { value: 'lighting_team', label: 'Lighting Team' },
+    { value: 'other', label: 'Other' }
+  ];
 
   typeOptions: { value: TypeFilter; label: string }[] = [
     { value: 'all', label: 'Individuals & teams' },
@@ -156,8 +153,23 @@ export class Marketplace implements OnInit {
       const matchesTerm =
         !term || p.name.toLowerCase().includes(term) || p.skills.some(s => s.toLowerCase().includes(term));
 
-      const matchesService =
-        service === 'all' || p.skills.some(s => s.toLowerCase().replace(/\s+/g, '_').includes(service));
+      let matchesService = service === 'all';
+      if (!matchesService) {
+        matchesService = p.skills.some(s => {
+          const sClean = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const serviceClean = service.replace(/_/g, '');
+          if (serviceClean === 'cinematographer') {
+            return sClean.includes('cinematography') || sClean.includes('cinematographer');
+          }
+          if (serviceClean === 'photographer') {
+            return sClean.includes('photo') || sClean.includes('photographer');
+          }
+          if (serviceClean === 'videographer') {
+            return sClean.includes('video') || sClean.includes('videographer');
+          }
+          return sClean.includes(serviceClean) || serviceClean.includes(sClean);
+        });
+      }
 
       const matchesType =
         type === 'all' ||
@@ -175,18 +187,22 @@ export class Marketplace implements OnInit {
   );
 
   verifiedCount = computed(() => this.professionals().filter(p => p.verified).length);
-  hiredCount = signal(0); // TODO: no "hired" data source wired up yet
+  hiredCount = computed(() => 
+    this.workRequests().filter(r => r.status === 'Accepted' || r.status === 'Completed').length
+  );
 
   setTab(tab: 'browse' | 'requests') {
     this.activeTab.set(tab);
   }
 
-  toggleServiceMenu() {
+  toggleServiceMenu(event?: MouseEvent) {
+    if (event) event.stopPropagation();
     this.isServiceMenuOpen.set(!this.isServiceMenuOpen());
     this.isTypeMenuOpen.set(false);
   }
 
-  toggleTypeMenu() {
+  toggleTypeMenu(event?: MouseEvent) {
+    if (event) event.stopPropagation();
     this.isTypeMenuOpen.set(!this.isTypeMenuOpen());
     this.isServiceMenuOpen.set(false);
   }
@@ -224,13 +240,38 @@ export class Marketplace implements OnInit {
     return Math.max(0, p.skills.length - 3);
   }
 
+  onOpenAddProfile() {
+    this.showAddProfileModal.set(true);
+  }
+
+  onAddProfileClose() {
+    this.showAddProfileModal.set(false);
+  }
+
+  onProfileAdded(newProf: Professional) {
+    this.professionals.update(list => [newProf, ...list]);
+  }
+
+  onSendWorkBrief(p: Professional) {
+    this.selectedProfessionalForBrief.set(p);
+    this.showBriefModal.set(true);
+  }
+
+  onBriefModalClose() {
+    this.showBriefModal.set(false);
+    this.selectedProfessionalForBrief.set(null);
+  }
+
+  onBriefSubmitted(newWorkRequest: WorkRequest) {
+    this.workRequests.update(requests => [newWorkRequest, ...requests]);
+  }
+
   onAssignWork(request: WorkRequest) {
     this.selectedWorkRequest.set(request);
     this.showAssignmentModal.set(true);
   }
 
   onStatusChange(request: WorkRequest, newStatus: string) {
-    // Convert status to proper case for service
     const properStatus = newStatus.charAt(0).toUpperCase() + newStatus.slice(1).toLowerCase() as 'Pending' | 'Accepted' | 'Declined' | 'Completed';
 
     this.marketplaceService.updateWorkRequest(request.id, { status: properStatus }).subscribe({
@@ -254,7 +295,6 @@ export class Marketplace implements OnInit {
   }
 
   onAssignmentConfirmed(data: any) {
-    // Update the work request status to 'Accepted' when assignment is confirmed
     const requestId = this.selectedWorkRequest()?.id;
     if (requestId) {
       this.marketplaceService.updateWorkRequest(requestId, { status: 'Accepted' }).subscribe({
@@ -263,7 +303,6 @@ export class Marketplace implements OnInit {
             this.workRequests.update(requests =>
               requests.map(r => r.id === requestId ? { ...r, status: 'Accepted' } : r)
             );
-            this.hiredCount.update(count => count + 1);
           }
         },
         error: (err) => {

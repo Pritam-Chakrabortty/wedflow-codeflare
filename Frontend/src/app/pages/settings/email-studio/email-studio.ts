@@ -195,6 +195,11 @@ export class EmailStudio {
     this.selectedFormat.message = this.selectedFormat.message + token;
   }
 
+  applyFormat(type: 'bold' | 'italic'): void {
+    const wrapSymbol = type === 'bold' ? '**' : '*';
+    this.selectedFormat.message = `${this.selectedFormat.message} ${wrapSymbol}text${wrapSymbol}`;
+  }
+
   onBannerSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];

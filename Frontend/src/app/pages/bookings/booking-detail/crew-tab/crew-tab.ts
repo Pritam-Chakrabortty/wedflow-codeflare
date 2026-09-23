@@ -40,15 +40,61 @@ export class CrewTab {
     return item.id;
   }
 
-  eventForDay(day: CrewPlanDay) {
-    return this.booking.event_days?.find((e) => e.event_name === day.event_type);
+  /**
+   * Dynamically constructs the Crew Plan according to the booking's actual event_days.
+   * If event_days are defined, every event day gets a crew plan card matching package roles or default roles.
+   */
+  get displayCrewPlan(): CrewPlanDay[] {
+    if (!this.booking) return [];
+
+    const eventDays = this.booking.event_days || [];
+    const packagePlan = this.booking.package_crew_plan || [];
+
+    if (eventDays.length === 0) {
+      return packagePlan;
+    }
+
+    return eventDays.map((eventDay, index) => {
+      // 1. Try to find matching package plan day by event_name === event_type
+      let matchedPlan = packagePlan.find(
+        (p) => p.event_type?.trim().toLowerCase() === eventDay.event_name?.trim().toLowerCase()
+      );
+
+      // 2. If not matched by name, try matching by index
+      if (!matchedPlan && packagePlan[index]) {
+        matchedPlan = packagePlan[index];
+      }
+
+      // 3. Construct CrewPlanDay for this specific event day
+      return {
+        day_number: index + 1,
+        event_type: eventDay.event_name,
+        roles: matchedPlan && matchedPlan.roles && matchedPlan.roles.length > 0 ? matchedPlan.roles : [
+          { role: 'Photographer', quantity: 2 },
+          { role: 'Cinematographer', quantity: 1 }
+        ]
+      };
+    });
+  }
+
+  eventForDay(day: CrewPlanDay): BookingEvent | undefined {
+    return this.booking?.event_days?.find(
+      (e) => e.event_name?.trim().toLowerCase() === day.event_type?.trim().toLowerCase()
+    );
   }
 
   assignedCount(day: CrewPlanDay, role: string): number {
-    if (!this.booking.crew_assignments) return 0;
-    return this.booking.crew_assignments.filter(
-      (a: CrewAssignment) => a.event_name === day.event_type && a.assigned_role === role
-    ).length;
+    if (!this.booking?.crew_assignments) return 0;
+    const targetEventName = day.event_type?.trim().toLowerCase();
+    const targetRole = role?.trim().toLowerCase();
+
+    return this.booking.crew_assignments.filter((a: CrewAssignment) => {
+      const assignmentEventName = a.event_name?.trim().toLowerCase();
+      const assignmentRole = a.assigned_role?.trim().toLowerCase();
+      const eventMatches = !assignmentEventName || !targetEventName || assignmentEventName === targetEventName;
+      const roleMatches = assignmentRole === targetRole;
+      return eventMatches && roleMatches;
+    }).length;
   }
 
   roleStatus(day: CrewPlanDay, role: { role: string; quantity: number }): 'done' | 'left' {
@@ -61,14 +107,12 @@ export class CrewTab {
   }
 
   get totalCrewSlots(): number {
-    if (!this.booking.package_crew_plan) return 0;
-    return this.booking.package_crew_plan.reduce((sum, d) => sum + d.roles.reduce((s, r) => s + r.quantity, 0), 0);
+    return this.displayCrewPlan.reduce((sum, d) => sum + d.roles.reduce((s, r) => s + r.quantity, 0), 0);
   }
 
   get pendingCrewSlots(): number {
-    if (!this.booking.package_crew_plan) return 0;
     let pending = 0;
-    for (const day of this.booking.package_crew_plan) {
+    for (const day of this.displayCrewPlan) {
       for (const role of day.roles) pending += Math.max(0, role.quantity - this.assignedCount(day, role.role));
     }
     return pending;

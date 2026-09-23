@@ -1,0 +1,233 @@
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 99998;
+  padding: 20px;
+  overflow: auto;
+  pointer-events: auto;
+}
+
+.brief-dialog {
+  background: #000000;
+  border: 2px solid #D4AF37;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 92%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(212, 175, 55, 0.3);
+  z-index: 99999;
+  pointer-events: auto;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #D4AF37;
+}
+
+.dialog-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #D4AF37;
+  margin: 0 0 6px 0;
+}
+
+.dialog-subtitle {
+  font-size: 13px;
+  color: #a3a3a3;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.dialog-close {
+  background: none;
+  border: 1px solid #D4AF37;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #D4AF37;
+  transition: background-color 0.2s, color 0.2s;
+
+  &:hover {
+    background-color: #D4AF37;
+    color: #000000;
+  }
+}
+
+.dialog-body {
+  padding: 24px;
+}
+
+.error-alert {
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  color: #fca5a5;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.brief-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #D4AF37;
+  margin: 0;
+}
+
+.required {
+  color: #FFD700;
+}
+
+.form-select,
+.form-input,
+.form-textarea {
+  padding: 10px 12px;
+  border: 1px solid #D4AF37;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #ffffff;
+  background: #1a1a1a;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: #FFD700;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
+  }
+
+  &:placeholder-shown {
+    border-color: #D4AF37;
+  }
+
+  option {
+    background: #1a1a1a;
+    color: #ffffff;
+  }
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.portfolio-link-wrap {
+  margin-top: 4px;
+}
+
+.portfolio-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #3b82f6;
+  text-decoration: underline;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #60a5fa;
+  }
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.btn-outline,
+.btn-primary {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-outline {
+  background: #000000;
+  border: 1px solid #D4AF37;
+  color: #D4AF37;
+
+  &:hover:not(:disabled) {
+    background: #D4AF37;
+    color: #000000;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background: #D4AF37;
+  color: #000000;
+
+  &:hover:not(:disabled) {
+    background: #FFD700;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+

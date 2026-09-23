@@ -21,7 +21,30 @@
     </div>
   </div>
 
-  <div class="crew-layout">
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="loading-spinner"></div>
+    <p>Loading crew assignments...</p>
+    <button class="retry-btn" (click)="refreshData()" style="margin-top: 1rem;">Retry Loading</button>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-state" *ngIf="error">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <p>{{ error }}</p>
+    <div class="error-actions">
+      <button class="retry-btn" (click)="refreshData()">Retry</button>
+      <button class="retry-btn" (click)="testConnection()">Test Connection</button>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading && !error && bookingQueue.length === 0">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <p>No bookings found. Create bookings to start assigning crew.</p>
+  </div>
+
+  <div class="crew-layout" *ngIf="!isLoading && !error && bookingQueue.length > 0">
     <!-- Left: Assignment Queue -->
     <div class="queue-panel">
       <div class="queue-header">
@@ -41,6 +64,7 @@
         </select>
         <select class="form-select" [(ngModel)]="eventFilter">
           <option value="all">All events</option>
+          <option *ngFor="let eventType of eventTypes" [value]="eventType">{{ eventType }}</option>
         </select>
       </div>
 
@@ -63,7 +87,8 @@
               <div class="queue-package">{{ b.packageName }}</div>
             </div>
             <span class="pending-badge" *ngIf="b.pendingCount > 0">{{ b.pendingCount }} pending</span>
-            <span class="plan-needed-badge" *ngIf="b.pendingCount === 0 && b.stages.length === 0">Plan needed</span>
+            <span class="plan-needed-badge" *ngIf="b.pendingCount === 0 && (b.stages.length === 0 || hasUnconfiguredPlan(b))">Plan needed</span>
+            <span class="tag tag--outline" *ngIf="b.pendingCount === 0 && b.stages.length > 0 && !hasUnconfiguredPlan(b)" style="font-size: 11px; padding: 2px 8px;">Crew complete</span>
           </div>
 
           <div class="queue-meta">
@@ -92,7 +117,8 @@
               </div>
             </div>
             <span class="pending-badge" *ngIf="selectedBooking.pendingCount > 0">{{ selectedBooking.pendingCount }} pending</span>
-            <span class="tag tag--outline" *ngIf="selectedBooking.pendingCount === 0">
+            <span class="plan-needed-badge" *ngIf="selectedBooking.pendingCount === 0 && (selectedBooking.stages.length === 0 || hasUnconfiguredPlan(selectedBooking))">Plan needed</span>
+            <span class="tag tag--outline" *ngIf="selectedBooking.pendingCount === 0 && selectedBooking.stages.length > 0 && !hasUnconfiguredPlan(selectedBooking)">
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
               Crew complete
             </span>
@@ -103,12 +129,12 @@
           </div>
         </div>
 
-        <div class="stage-list">
+        <div class="stage-list" *ngIf="selectedBooking.stages.length > 0">
           <div class="stage-card" *ngFor="let item of selectedRoleCards">
             <div class="stage-top">
               <div>
                 <div class="stage-title-row">
-                  <span class="stage-title">{{ item.stage.name }} · {{ item.stage.name }}</span>
+                  <span class="stage-title">{{ item.stage.name }}</span>
                   <span class="tag tag--muted" *ngIf="item.pending <= 0">Done</span>
                   <span class="tag tag--outline" *ngIf="item.pending > 0">{{ item.pending }} pending</span>
                   <span class="tag tag--danger" *ngIf="item.stage.overdue">Overdue</span>
@@ -155,9 +181,85 @@
                 </ng-template>
               </div>
             </div>
+        </div>
+
+        <div class="empty-state" *ngIf="selectedBooking.stages.length === 0 || selectedRoleCards.length === 0" style="padding: 3rem 1.5rem; text-align: center;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 0.75rem; color: #94a3b8;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <p style="font-weight: 500; color: #334155; margin-bottom: 0.25rem;">No Crew Plan Roles Configured</p>
+          <p style="font-size: 0.875rem; color: #64748b;">Package "{{ selectedBooking.packageName }}" does not have crew requirements configured for these event days.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Staff Assignment Modal -->
+  <div class="modal-overlay" *ngIf="showAssignModal" (click)="closeAssignModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Assign {{ selectedRole?.role }}</h2>
+        <button class="modal-close" (click)="closeAssignModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="assignment-info">
+          <div class="info-item">
+            <span class="info-label">Event:</span>
+            <span class="info-value">{{ selectedStage?.name }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Date:</span>
+            <span class="info-value">{{ selectedStage?.date }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Venue:</span>
+            <span class="info-value">{{ selectedStage?.venue }}</span>
           </div>
         </div>
 
+        <div class="staff-list">
+          <div class="staff-list-header">
+            <span>Available Staff</span>
+            <span class="staff-count">{{ availableStaffForRole.length }} members</span>
+          </div>
+
+          <div class="staff-item" 
+               *ngFor="let staff of availableStaffForRole"
+               [class.staff-item--available]="staff.isAvailable"
+               [class.staff-item--unavailable]="!staff.isAvailable"
+               (click)="staff.isAvailable && assignStaffToRole(staff)">
+            
+            <div class="staff-avatar">
+              <span>{{ (staff.staff_name || staff.name).charAt(0).toUpperCase() }}</span>
+            </div>
+            
+            <div class="staff-details">
+              <div class="staff-name">{{ staff.staff_name || staff.name }}</div>
+              <div class="staff-role">{{ staff.role }}</div>
+            </div>
+
+            <div class="staff-status">
+              <span class="status-indicator" [class.status--available]="staff.isAvailable" [class.status--unavailable]="!staff.isAvailable">
+                {{ staff.isAvailable ? 'Available' : (staff.isRoleMatch === false ? 'Role Mismatch' : 'Unavailable') }}
+              </span>
+              <div class="conflict-info" *ngIf="!staff.isAvailable">
+                <span *ngIf="staff.existingAssignments > 0">{{ staff.existingAssignments }} existing assignment(s)</span>
+                <span *ngIf="staff.isRoleMatch === false && staff.existingAssignments === 0">Role: {{ staff.role }}</span>
+              </div>
+            </div>
+
+            <button class="assign-btn" [disabled]="!staff.isAvailable">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              Assign
+            </button>
+          </div>
+
+          <div class="no-staff-message" *ngIf="availableStaffForRole.length === 0">
+            No staff members available for this role
+          </div>
+        </div>
       </div>
     </div>
   </div>

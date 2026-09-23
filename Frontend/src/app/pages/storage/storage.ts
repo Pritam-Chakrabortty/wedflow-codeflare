@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StorageService, StorageFile, BookingOption } from '../../services/storage.service';
@@ -14,6 +14,7 @@ type FileTypeOption = { value: string; label: string };
 })
 export class Storage implements OnInit {
   private storageService = inject(StorageService);
+  private elementRef = inject(ElementRef);
   // ==== stats ====
   usedBytes = signal(0);
   usedLabel = signal('0 B');
@@ -81,22 +82,42 @@ categoryOptions: FileTypeOption[] = [
 
   filteredFiles = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
-    const category = this.selectedCategory();
+    const category = this.selectedCategory().toLowerCase();
 
     return this.files().filter((f) => {
       const matchesTerm =
         !term ||
-        f.name.toLowerCase().includes(term) ||
-        f.customer.toLowerCase().includes(term) ||
-        f.bookingId.toLowerCase().includes(term) ||
+        (f.name && f.name.toLowerCase().includes(term)) ||
+        (f.customer && f.customer.toLowerCase().includes(term)) ||
+        (f.bookingId && f.bookingId.toLowerCase().includes(term)) ||
         (f.bookingNumber && f.bookingNumber.toLowerCase().includes(term));
 
+      const fileCategory = (f.category || '').toLowerCase();
+      const fileBadge = (f.badge || '').toLowerCase().replace(/\s+/g, '_');
+
       const matchesCategory =
-        category === 'all' || f.badge.toLowerCase().replace(/\s+/g, '_') === category || f.category === category;
+        category === 'all' ||
+        fileCategory === category ||
+        fileBadge === category ||
+        (category === 'other' && (fileCategory === 'general' || fileBadge === 'other'));
 
       return matchesTerm && matchesCategory;
     });
   });
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (!this.elementRef.nativeElement.contains(event.target)) {
+      this.closeAllMenus();
+    }
+  }
+
+  closeAllMenus() {
+    this.isBookingMenuOpen.set(false);
+    this.isRawTypeMenuOpen.set(false);
+    this.isMediaTypeMenuOpen.set(false);
+    this.isCategoryMenuOpen.set(false);
+  }
 
   // ==== dropdown toggles ====
   toggleBookingMenu() {
@@ -221,14 +242,10 @@ categoryOptions: FileTypeOption[] = [
 
   loadFiles() {
     this.isLoadingFiles.set(true);
-    const filters = {
-      searchTerm: this.searchTerm(),
-      category: this.selectedCategory() !== 'all' ? this.selectedCategory() : undefined
-    };
 
-    this.storageService.getFiles(filters).subscribe({
+    this.storageService.getFiles().subscribe({
       next: (response) => {
-        this.files.set(response.files);
+        this.files.set(response.files || []);
         this.isLoadingFiles.set(false);
       },
       error: (error) => {

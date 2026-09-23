@@ -92,10 +92,46 @@
   color: var(--muted-fg);
 }
 
+.header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
 .header-stats {
   display: flex;
   gap: 12px;
   font-size: 14px;
+}
+
+.btn-add-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #D4AF37;
+  color: #000000;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s, transform 0.1s;
+
+  &:hover {
+    background-color: #FFD700;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .stat-block {

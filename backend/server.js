@@ -10,7 +10,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5001;
 
 // File upload configuration
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -261,6 +261,99 @@ async function sendReminderEmail(recipientEmail, subject, messageContent, remind
   } catch (error) {
     console.error('❌ Error sending reminder email:', error);
     throw error;
+  }
+}
+
+async function sendWorkBriefEmail({ recipientEmail, professionalName, projectName, professionalRole, eventDate, venue, budget, contactPhone, projectBrief }) {
+  console.log(`Attempting to send work brief email to: ${recipientEmail}`);
+
+  if (shouldBypassEmailDelivery(recipientEmail)) {
+    console.warn(`Development mode: bypassing work brief email delivery for ${recipientEmail}`);
+    return { devMode: true };
+  }
+
+  const formattedBudget = budget ? `₹${Number(budget).toLocaleString('en-IN')}` : 'Not specified';
+  const formattedDate = eventDate ? new Date(eventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Flexible / TBD';
+  const formattedVenue = venue || 'To be discussed';
+  const formattedPhone = contactPhone || 'Not provided';
+  const briefText = projectBrief || 'No details provided.';
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'WedFlow CRM <onboarding@resend.dev>',
+      to: [recipientEmail],
+      subject: `New Work Brief: ${projectName} - ${professionalRole}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>New Work Brief - WedFlow CRM</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #0f0f11; color: #e5e5e5;">
+          <div style="max-width: 600px; margin: 20px auto; background-color: #17171c; padding: 30px; border-radius: 8px; border: 1px solid #2e2e38; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+            <div style="border-bottom: 2px solid #D4AF37; padding-bottom: 16px; margin-bottom: 24px;">
+              <h1 style="color: #D4AF37; margin: 0; font-size: 22px;">WedFlow CRM</h1>
+              <p style="color: #a0a0b0; margin: 4px 0 0 0; font-size: 14px;">Freelancer Marketplace - New Work Opportunity</p>
+            </div>
+            
+            <p style="font-size: 16px; color: #ffffff; margin-bottom: 16px;">Hello <strong>${professionalName}</strong>,</p>
+            <p style="font-size: 14px; color: #cccccc; line-height: 1.5; margin-bottom: 24px;">
+              You have received a new work brief proposal for the role of <strong>${professionalRole}</strong>.
+            </p>
+
+            <div style="background-color: #1f1f26; padding: 20px; border-radius: 6px; border: 1px solid #2f2f3d; margin-bottom: 24px;">
+              <h2 style="color: #D4AF37; font-size: 18px; margin: 0 0 16px 0; border-bottom: 1px solid #2f2f3d; padding-bottom: 8px;">${projectName}</h2>
+              
+              <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <tr>
+                  <td style="padding: 6px 0; color: #888899; width: 140px;"><strong>Required Service:</strong></td>
+                  <td style="padding: 6px 0; color: #ffffff;">${professionalRole}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #888899;"><strong>Event Date:</strong></td>
+                  <td style="padding: 6px 0; color: #ffffff;">${formattedDate}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #888899;"><strong>Location / Venue:</strong></td>
+                  <td style="padding: 6px 0; color: #ffffff;">${formattedVenue}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #888899;"><strong>Budget:</strong></td>
+                  <td style="padding: 6px 0; color: #D4AF37; font-weight: bold;">${formattedBudget}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 6px 0; color: #888899;"><strong>Contact Phone:</strong></td>
+                  <td style="padding: 6px 0; color: #ffffff;">${formattedPhone}</td>
+                </tr>
+              </table>
+            </div>
+
+            <div style="margin-bottom: 24px;">
+              <h3 style="color: #D4AF37; font-size: 15px; margin: 0 0 8px 0;">Project Brief & Scope:</h3>
+              <div style="background-color: #121216; padding: 16px; border-radius: 6px; border-left: 3px solid #D4AF37; color: #dddddd; font-size: 14px; white-space: pre-wrap; line-height: 1.6;">${briefText}</div>
+            </div>
+
+            <div style="border-top: 1px solid #2e2e38; margin-top: 24px; padding-top: 16px; font-size: 12px; color: #777788; text-align: center;">
+              <p style="margin: 0;">This is an automated notification from WedFlow CRM Marketplace.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      console.error('❌ Resend work brief email error:', error);
+      return { error };
+    }
+
+    console.log(`✅ Work brief email sent successfully to ${recipientEmail}:`, data);
+    return { data };
+  } catch (error) {
+    console.error('❌ Error sending work brief email:', error);
+    return { error };
   }
 }
 
@@ -1415,7 +1508,18 @@ app.get('/api/bookings', async (req, res) => {
               b.current_workflow_stage, b.notes, b.created_at, b.updated_at,
               c.id AS client_id, c.name AS client_name,
               p.id AS package_id, p.name AS package_name,
-              be.event_date, be.venue
+              be.event_date, be.venue,
+              COALESCE((SELECT json_agg(json_build_object(
+                'id', e.id, 'event_name', e.event_name, 'event_date', e.event_date, 'venue', e.venue)
+                ORDER BY e.event_date)
+                FROM booking_events e WHERE e.booking_id = b.id AND e.workspace_id = b.workspace_id), '[]') AS event_days,
+              COALESCE((SELECT json_agg(json_build_object(
+                'day_number', pd.day_number, 'event_type', pd.event_type,
+                'roles', COALESCE((SELECT json_agg(json_build_object('role', ct.name, 'quantity', pdc.quantity))
+                      FROM package_day_crew pdc JOIN crew_types ct ON ct.id = pdc.crew_type_id
+                      WHERE pdc.package_day_id = pd.id), '[]'))
+                ORDER BY pd.day_number)
+                FROM package_days pd WHERE pd.package_id = p.id AND pd.workspace_id = p.workspace_id), '[]') AS package_crew_plan
        FROM bookings b
        JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
        JOIN packages p ON p.id = b.package_id AND p.workspace_id = b.workspace_id
@@ -1854,7 +1958,7 @@ app.get('/api/freelancers', async (req, res) => {
   }
 });
 
-app.post('/api/freelancers', requireAdmin, async (req, res) => {
+app.post('/api/freelancers', async (req, res) => {
   const { name, email, phone, specialization, availability, status, rate, notes, skills, experience_years, city, state, verified, profile_type, summary, portfolio_url } = req.body;
 
   if (!name || !String(name).trim()) {
@@ -1869,7 +1973,24 @@ app.post('/api/freelancers', requireAdmin, async (req, res) => {
       [req.user.workspace_id, String(name).trim(), email?.trim() || null, phone?.trim() || null, specialization || 'general', availability || 'available', status || 'active', rate !== undefined && rate !== null ? Number(rate) : null, notes?.trim() || null, skills || null, experience_years !== undefined && experience_years !== null ? Number(experience_years) : null, city?.trim() || null, state?.trim() || null, verified !== undefined ? verified : false, profile_type || 'individual', summary?.trim() || null, portfolio_url?.trim() || null]
     );
 
-    return res.status(201).json({ success: true, freelancer: result.rows[0] });
+    const f = result.rows[0];
+    const professional = {
+      id: f.id,
+      initials: f.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
+      name: f.name,
+      verified: f.verified ?? false,
+      type: f.profile_type === 'team' ? 'Team' : 'Individual',
+      experienceYears: f.experience_years || 0,
+      city: f.city || '',
+      state: f.state || '',
+      skills: f.skills || [f.specialization],
+      summary: f.summary || f.notes || '',
+      availableRate: f.rate || 0,
+      email: f.email || '',
+      phone: f.phone || ''
+    };
+
+    return res.status(201).json({ success: true, freelancer: f, professional });
   } catch (error) {
     console.error('Error creating freelancer:', error);
     return res.status(500).json({ error: 'Failed to create freelancer' });
@@ -1997,6 +2118,21 @@ app.post('/api/marketplace-work-requests', async (req, res) => {
       budget: result.rows[0].budget,
       status: result.rows[0].status.charAt(0).toUpperCase() + result.rows[0].status.slice(1)
     };
+
+    // Trigger work brief email delivery via Resend API
+    if (result.rows[0].professional_email) {
+      sendWorkBriefEmail({
+        recipientEmail: result.rows[0].professional_email,
+        professionalName: result.rows[0].professional_name,
+        projectName: result.rows[0].project_name,
+        professionalRole: result.rows[0].professional_role,
+        eventDate: result.rows[0].event_date,
+        venue: result.rows[0].venue,
+        budget: result.rows[0].budget,
+        contactPhone: result.rows[0].professional_phone,
+        projectBrief: notes
+      }).catch(err => console.error('Error in sendWorkBriefEmail background call:', err));
+    }
 
     return res.status(201).json({ success: true, workRequest });
   } catch (error) {
@@ -2868,7 +3004,22 @@ app.delete('/api/booking-events/:id', async (req, res) => {
 app.get('/api/equipment', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT * FROM equipment WHERE workspace_id = $1 ORDER BY created_at DESC`,
+      `SELECT e.*,
+              COALESCE(u.staff_name, NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), s.name) AS checked_out_with,
+              ea.assigned_at AS checked_out_since,
+              ea.returned_at AS checked_out_due
+       FROM equipment e
+       LEFT JOIN LATERAL (
+         SELECT staff_id, assigned_at, returned_at
+         FROM equipment_assignments
+         WHERE equipment_id = e.id AND status = 'assigned'
+         ORDER BY assigned_at DESC
+         LIMIT 1
+       ) ea ON true
+       LEFT JOIN users u ON u.id = ea.staff_id
+       LEFT JOIN staff s ON s.id = ea.staff_id
+       WHERE e.workspace_id = $1
+       ORDER BY e.created_at DESC`,
       [req.user.workspace_id]
     );
 
@@ -2958,11 +3109,14 @@ app.put('/api/equipment/:id', requireAdmin, async (req, res) => {
 app.get('/api/equipment-assignments', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT ea.*, e.name AS equipment_name, s.name AS staff_name, be.event_name, be.event_date, be.venue
+      `SELECT ea.*, e.name AS equipment_name,
+              COALESCE(u.staff_name, NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), s.name) AS staff_name,
+              be.event_name, be.event_date, be.venue
        FROM equipment_assignments ea
        JOIN equipment e ON e.id = ea.equipment_id
+       LEFT JOIN users u ON u.id = ea.staff_id
        LEFT JOIN staff s ON s.id = ea.staff_id
-       JOIN booking_events be ON be.id = ea.booking_event_id
+       LEFT JOIN booking_events be ON be.id = ea.booking_event_id
        WHERE e.workspace_id = $1
        ORDER BY ea.assigned_at DESC`,
       [req.user.workspace_id]
@@ -2978,8 +3132,8 @@ app.get('/api/equipment-assignments', async (req, res) => {
 app.post('/api/equipment-assignments', requireAdmin, async (req, res) => {
   const { equipment_id, booking_event_id, staff_id, assigned_at, returned_at, status, notes } = req.body;
 
-  if (!equipment_id || !booking_event_id) {
-    return res.status(400).json({ error: 'Equipment and booking event are required' });
+  if (!equipment_id) {
+    return res.status(400).json({ error: 'Equipment is required' });
   }
 
   try {
@@ -2991,21 +3145,13 @@ app.post('/api/equipment-assignments', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Equipment not found in this workspace' });
     }
 
-    const eventCheck = await pool.query(
-      `SELECT id FROM booking_events WHERE id = $1 AND workspace_id = $2`,
-      [booking_event_id, req.user.workspace_id]
-    );
-    if (eventCheck.rows.length === 0) {
-      return res.status(400).json({ error: 'Booking event not found in this workspace' });
-    }
-
-    if (staff_id) {
-      const staffCheck = await pool.query(
-        `SELECT id FROM staff WHERE id = $1 AND workspace_id = $2`,
-        [staff_id, req.user.workspace_id]
+    if (booking_event_id) {
+      const eventCheck = await pool.query(
+        `SELECT id FROM booking_events WHERE id = $1 AND workspace_id = $2`,
+        [booking_event_id, req.user.workspace_id]
       );
-      if (staffCheck.rows.length === 0) {
-        return res.status(400).json({ error: 'Staff member not found in this workspace' });
+      if (eventCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Booking event not found in this workspace' });
       }
     }
 
@@ -3013,13 +3159,38 @@ app.post('/api/equipment-assignments', requireAdmin, async (req, res) => {
       `INSERT INTO equipment_assignments (equipment_id, booking_event_id, staff_id, assigned_at, returned_at, status, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [equipment_id, booking_event_id, staff_id || null, assigned_at || new Date().toISOString(), returned_at || null, status || 'assigned', notes?.trim() || null]
+      [equipment_id, booking_event_id || null, staff_id || null, assigned_at || new Date().toISOString(), returned_at || null, status || 'assigned', notes?.trim() || null]
     );
 
     return res.status(201).json({ success: true, assignment: result.rows[0] });
   } catch (error) {
     console.error('Error creating equipment assignment:', error);
     return res.status(500).json({ error: 'Failed to create equipment assignment' });
+  }
+});
+
+app.put('/api/equipment-assignments/return-by-equipment/:equipmentId', requireAdmin, async (req, res) => {
+  try {
+    // Mark active assignments for this equipment as returned
+    await pool.query(
+      `UPDATE equipment_assignments
+       SET status = 'returned', returned_at = NOW(), updated_at = NOW()
+       WHERE equipment_id = $1 AND status = 'assigned'`,
+      [req.params.equipmentId]
+    );
+
+    // Update equipment status to available
+    await pool.query(
+      `UPDATE equipment
+       SET status = 'available', updated_at = NOW()
+       WHERE id = $1 AND workspace_id = $2`,
+      [req.params.equipmentId, req.user.workspace_id]
+    );
+
+    return res.json({ success: true, message: 'Equipment returned successfully' });
+  } catch (error) {
+    console.error('Error returning equipment:', error);
+    return res.status(500).json({ error: 'Failed to return equipment' });
   }
 });
 
@@ -3561,9 +3732,11 @@ app.get('/api/dashboard/summary', async (req, res) => {
          WHERE workspace_id = $1
        ),
        event_stats AS (
-         SELECT COUNT(*)::int AS upcoming_events
-         FROM booking_events
-         WHERE workspace_id = $1 AND event_date >= CURRENT_DATE
+         SELECT
+           COUNT(*)::int AS upcoming_events,
+           COUNT(*) FILTER (WHERE (SELECT COUNT(*) FROM crew_assignments ca WHERE ca.booking_event_id = be.id) = 0)::int AS unassigned_crew_events
+         FROM booking_events be
+         WHERE be.workspace_id = $1 AND be.event_date >= CURRENT_DATE
        )
        SELECT
          bs.total_bookings,
@@ -3579,13 +3752,39 @@ app.get('/api/dashboard/summary', async (req, res) => {
          rs.pending_reviews,
          rs.completed_reviews,
          rs.overdue_reviews,
-         es.upcoming_events
+         es.upcoming_events,
+         es.unassigned_crew_events
        FROM booking_stats bs
        CROSS JOIN payment_stats ps
        CROSS JOIN invoice_stats is_
        CROSS JOIN job_stats js
        CROSS JOIN review_stats rs
        CROSS JOIN event_stats es;`,
+      [req.user.workspace_id]
+    );
+
+    const unassignedEvents = await pool.query(
+      `SELECT be.id AS event_id, be.booking_id, be.event_name, be.event_date, be.venue,
+              c.name AS client_name, (be.event_date - CURRENT_DATE) AS days_diff
+       FROM booking_events be
+       JOIN bookings b ON b.id = be.booking_id AND b.workspace_id = be.workspace_id
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
+       WHERE be.workspace_id = $1
+         AND (SELECT COUNT(*) FROM crew_assignments ca WHERE ca.booking_event_id = be.id) = 0
+       ORDER BY be.event_date ASC
+       LIMIT 10`,
+      [req.user.workspace_id]
+    );
+
+    const pendingInvoices = await pool.query(
+      `SELECT i.id AS invoice_id, i.booking_id, i.invoice_number, i.total_amount, i.due_date, i.status,
+              c.name AS client_name
+       FROM invoices i
+       JOIN bookings b ON b.id = i.booking_id AND b.workspace_id = i.workspace_id
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
+       WHERE i.workspace_id = $1 AND i.status != 'paid'
+       ORDER BY i.due_date ASC NULLS LAST, i.created_at DESC
+       LIMIT 10`,
       [req.user.workspace_id]
     );
 
@@ -3629,13 +3828,56 @@ app.get('/api/dashboard/summary', async (req, res) => {
         completedReviews: Number(dashboard.completed_reviews || 0),
         overdueReviews: Number(dashboard.overdue_reviews || 0),
         upcomingEvents: Number(dashboard.upcoming_events || 0),
+        unassignedCrewEvents: Number(dashboard.unassigned_crew_events || 0),
       },
+      unassignedEvents: unassignedEvents.rows,
+      pendingInvoices: pendingInvoices.rows,
       recentBookings: recentBookings.rows,
       recentJobs: recentJobs.rows,
     });
   } catch (error) {
     console.error('Error fetching dashboard summary:', error);
     return res.status(500).json({ error: 'Failed to fetch dashboard summary' });
+  }
+});
+
+app.get('/api/dashboard/calendar', async (req, res) => {
+  try {
+    const year = parseInt(req.query.year, 10) || new Date().getFullYear();
+    const month = parseInt(req.query.month, 10) || (new Date().getMonth() + 1);
+
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endDate = new Date(year, month, 0).toISOString().slice(0, 10);
+
+    const result = await pool.query(
+      `SELECT be.id, be.booking_id, be.event_name, be.event_date, be.venue,
+              c.name AS client_name, p.name AS package_name,
+              (SELECT COUNT(*) FROM crew_assignments ca WHERE ca.booking_event_id = be.id) AS crew_count
+       FROM booking_events be
+       JOIN bookings b ON b.id = be.booking_id AND b.workspace_id = be.workspace_id
+       JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
+       LEFT JOIN packages p ON p.id = b.package_id AND p.workspace_id = b.workspace_id
+       WHERE be.workspace_id = $1
+         AND be.event_date >= $2 AND be.event_date <= $3
+       ORDER BY be.event_date ASC`,
+      [req.user.workspace_id, startDate, endDate]
+    );
+
+    const events = result.rows.map(row => ({
+      id: row.id,
+      bookingId: row.booking_id,
+      name: row.client_name || row.event_name,
+      eventName: row.event_name,
+      location: row.venue || 'N/A',
+      packageName: row.package_name || 'Standard Package',
+      eventDate: row.event_date,
+      needsCrew: Number(row.crew_count) === 0
+    }));
+
+    return res.json({ success: true, events, year, month });
+  } catch (error) {
+    console.error('Error fetching dashboard calendar:', error);
+    return res.status(500).json({ error: 'Failed to fetch dashboard calendar' });
   }
 });
 
@@ -3674,38 +3916,74 @@ app.post('/api/crew-assignments', async (req, res) => {
 
   try {
     const eventCheck = await pool.query(
-      `SELECT id FROM booking_events WHERE id = $1 AND workspace_id = $2`,
-      [booking_event_id, req.user.workspace_id]
+      `SELECT id, workspace_id FROM booking_events WHERE id = $1`,
+      [booking_event_id]
     );
     if (eventCheck.rows.length === 0) {
-      return res.status(400).json({ error: 'Booking event not found in this workspace' });
+      return res.status(400).json({ error: 'Booking event not found' });
     }
 
-    const staffCheck = await pool.query(
-      `SELECT id, email, name FROM staff WHERE id = $1 AND workspace_id = $2`,
-      [staff_id, req.user.workspace_id]
+    const targetWorkspaceId = req.user?.workspace_id || eventCheck.rows[0].workspace_id;
+
+    let resolvedStaffId = staff_id;
+    let staffMember = null;
+
+    const userCheck = await pool.query(
+      `SELECT id, email, COALESCE(staff_name, first_name || ' ' || last_name, email) AS staff_name FROM users WHERE id = $1`,
+      [staff_id]
     );
-    if (staffCheck.rows.length === 0) {
-      return res.status(400).json({ error: 'Staff member not found in this workspace' });
+
+    if (userCheck.rows.length > 0) {
+      staffMember = userCheck.rows[0];
+    } else {
+      const staffTableCheck = await pool.query(
+        `SELECT id, email, name AS staff_name, user_id FROM staff WHERE id = $1 OR user_id = $1`,
+        [staff_id]
+      );
+      if (staffTableCheck.rows.length > 0) {
+        staffMember = staffTableCheck.rows[0];
+        if (staffMember.user_id) {
+          resolvedStaffId = staffMember.user_id;
+        }
+      }
     }
 
-    const staffMember = staffCheck.rows[0];
+    if (!staffMember) {
+      return res.status(400).json({ error: 'Staff member not found' });
+    }
 
     const result = await pool.query(
       `INSERT INTO crew_assignments (workspace_id, booking_event_id, staff_id, assigned_role, assignment_date, start_time, end_time, status, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [req.user.workspace_id, booking_event_id, staff_id, String(assigned_role).trim(), assignment_date || new Date().toISOString().slice(0, 10), start_time || null, end_time || null, status || 'assigned', notes?.trim() || null]
+      [targetWorkspaceId, booking_event_id, resolvedStaffId, String(assigned_role).trim(), assignment_date || new Date().toISOString().slice(0, 10), start_time || null, end_time || null, status || 'assigned', notes?.trim() || null]
     );
+
+    const insertedAssignment = result.rows[0];
+
+    const fullAssignmentDetails = await pool.query(
+      `SELECT ca.*, COALESCE(u.staff_name, u.first_name || ' ' || u.last_name, u.email) AS staff_name, u.email AS staff_email, u.phone_number AS staff_phone,
+              be.event_name, be.event_date, be.venue,
+              b.booking_number, c.name AS client_name
+       FROM crew_assignments ca
+       LEFT JOIN users u ON u.id = ca.staff_id
+       LEFT JOIN booking_events be ON be.id = ca.booking_event_id
+       LEFT JOIN bookings b ON b.id = be.booking_id
+       LEFT JOIN client c ON c.id = b.client_id
+       WHERE ca.id = $1`,
+      [insertedAssignment.id]
+    );
+
+    const crewAssignment = fullAssignmentDetails.rows[0] || insertedAssignment;
 
     // Fetch event details for email notification
     const eventDetails = await pool.query(
       `SELECT be.event_name, be.event_date, be.venue, b.booking_number, c.name AS client_name
        FROM booking_events be
-       JOIN bookings b ON b.id = be.booking_id AND b.workspace_id = be.workspace_id
-       JOIN client c ON c.id = b.client_id AND c.workspace_id = b.workspace_id
-       WHERE be.id = $1 AND be.workspace_id = $2`,
-      [booking_event_id, req.user.workspace_id]
+       LEFT JOIN bookings b ON b.id = be.booking_id
+       LEFT JOIN client c ON c.id = b.client_id
+       WHERE be.id = $1`,
+      [booking_event_id]
     );
 
     if (eventDetails.rows.length > 0 && staffMember.email) {
@@ -3730,18 +4008,18 @@ app.post('/api/crew-assignments', async (req, res) => {
     await logUserActivity({
       userId: req.user.id,
       action: 'crew_assignment_created',
-      description: `Created crew assignment for staff ${staff_id} to event ${booking_event_id}`,
+      description: `Created crew assignment for staff ${resolvedStaffId} to event ${booking_event_id}`,
       req,
-      workspaceId: req.user.workspace_id,
+      workspaceId: targetWorkspaceId,
     });
 
-    return res.status(201).json({ success: true, crewAssignment: result.rows[0] });
+    return res.status(201).json({ success: true, crewAssignment });
   } catch (error) {
     console.error('Error creating crew assignment:', error);
     if (error.code === '23505') {
       return res.status(409).json({ error: 'This staff member is already assigned to this event' });
     }
-    return res.status(500).json({ error: 'Failed to create crew assignment' });
+    return res.status(500).json({ error: error.message || 'Failed to create crew assignment' });
   }
 });
 
@@ -3865,35 +4143,32 @@ app.get('/api/production-tickets', async (req, res) => {
 
     // Calculate overdue status and escalation for each ticket
     const tickets = [];
+    const escalationMatrixRes = await pool.query(
+      `SELECT level, overdue_hours, role FROM escalation_matrix 
+       WHERE workspace_id = $1 
+       ORDER BY overdue_hours ASC`,
+      [req.user.workspace_id]
+    );
+    const escalationMatrix = escalationMatrixRes.rows;
+
     for (const ticket of result.rows) {
       const deadline = new Date(ticket.deadline);
       const now = new Date();
       const isOverdue = deadline < now;
       
-      // Calculate escalation level based on overdue hours
       let escalationLevel = ticket.escalation_level;
       let escalationRole = ticket.escalation_role;
       
-      if (isOverdue && !escalationLevel) {
-        const overdueHours = Math.floor((now - deadline) / (1000 * 60 * 60));
+      if (isOverdue && !ticket.is_acknowledged && !escalationLevel && escalationMatrix.length > 0) {
+        const overdueHours = Math.floor((now.getTime() - deadline.getTime()) / (1000 * 60 * 60));
         
-        // Get escalation matrix for this workspace
-        const escalationMatrix = await pool.query(
-          `SELECT level, overdue_hours, role FROM escalation_matrix 
-           WHERE workspace_id = $1 
-           ORDER BY overdue_hours ASC`,
-          [req.user.workspace_id]
-        );
-        
-        // Find appropriate escalation level
-        for (const level of escalationMatrix.rows) {
+        for (const level of escalationMatrix) {
           if (overdueHours >= level.overdue_hours) {
             escalationLevel = level.level;
             escalationRole = level.role;
           }
         }
         
-        // Update ticket with calculated escalation
         if (escalationLevel) {
           await pool.query(
             `UPDATE production_tickets 
@@ -3908,7 +4183,8 @@ app.get('/api/production-tickets', async (req, res) => {
         ...ticket,
         is_overdue: isOverdue || ticket.is_overdue,
         escalation_level: escalationLevel,
-        escalation_role: escalationRole
+        escalation_role: escalationRole,
+        is_acknowledged: !!ticket.is_acknowledged
       });
     }
 
@@ -3952,7 +4228,6 @@ app.post('/api/production-tickets', async (req, res) => {
   }
 
   try {
-    // Validate booking exists in workspace
     if (booking_id) {
       const bookingCheck = await pool.query(
         `SELECT id FROM bookings WHERE id = $1 AND workspace_id = $2`,
@@ -3963,7 +4238,6 @@ app.post('/api/production-tickets', async (req, res) => {
       }
     }
 
-    // Validate assignee exists in workspace
     if (assignee_id) {
       const assigneeCheck = await pool.query(
         `SELECT id FROM users WHERE id = $1 AND workspace_id = $2`,
@@ -4065,12 +4339,12 @@ app.delete('/api/production-tickets/:id', async (req, res) => {
   }
 });
 
-// Acknowledge escalation (clear escalation level)
+// Acknowledge escalation (set is_acknowledged = true)
 app.post('/api/production-tickets/:id/acknowledge', async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE production_tickets
-       SET escalation_level = NULL, escalation_role = NULL, updated_at = NOW()
+       SET is_acknowledged = true, updated_at = NOW()
        WHERE id = $1 AND workspace_id = $2
        RETURNING *`,
       [req.params.id, req.user.workspace_id]
@@ -4488,11 +4762,11 @@ app.get('/api/files/enhanced', async (req, res) => {
     let query = `
       SELECT f.*, 
              b.booking_number, 
-             c.client_name,
-             COALESCE(c.client_name, 'Unknown') as customer_name
+             c.name as client_name,
+             COALESCE(c.name, 'Unknown') as customer_name
       FROM files f
       LEFT JOIN bookings b ON b.id = f.booking_id AND b.workspace_id = f.workspace_id
-      LEFT JOIN clients c ON c.id = b.client_id AND c.workspace_id = f.workspace_id
+      LEFT JOIN client c ON c.id = b.client_id AND c.workspace_id = f.workspace_id
       WHERE f.workspace_id = $1 AND f.status != 'deleted'
     `;
     
@@ -4501,7 +4775,7 @@ app.get('/api/files/enhanced', async (req, res) => {
 
     if (search) {
       paramCount++;
-      query += ` AND (f.file_name ILIKE $${paramCount} OR b.booking_number ILIKE $${paramCount} OR c.client_name ILIKE $${paramCount})`;
+      query += ` AND (f.file_name ILIKE $${paramCount} OR b.booking_number ILIKE $${paramCount} OR c.name ILIKE $${paramCount})`;
       params.push(`%${search}%`);
     }
 
@@ -4699,6 +4973,7 @@ function mapCategoryToBadge(category) {
     'edited': 'Edited',
     'album': 'Album',
     'final': 'Final',
+    'other': 'Other',
     'general': 'Other'
   };
   return categoryMap[category?.toLowerCase()] || 'Other';

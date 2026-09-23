@@ -126,6 +126,52 @@
       </div>
     </section>
 
+    <!-- Maintenance section -->
+    <section *ngIf="maintenanceItems().length > 0" class="equipment-section">
+      <h2 class="section-heading">
+        Maintenance ({{ maintenanceItems().length }})
+      </h2>
+
+      <div class="equipment-grid">
+        <article *ngFor="let item of maintenanceItems()" class="equipment-card">
+          <div class="card-top">
+            <div class="item-identity">
+              <div class="item-name-row">
+                <span class="item-name">{{ item.name }}</span>
+              </div>
+              <p class="item-type">
+                {{ item.typeLabel }}<span *ngIf="item.idNumber"> &middot; {{ item.idNumber }}</span>
+              </p>
+            </div>
+            <span class="status-badge" style="background: #fffbebfb; color: #b45309;">Maintenance</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Retired section -->
+    <section *ngIf="retiredItems().length > 0" class="equipment-section">
+      <h2 class="section-heading">
+        Retired ({{ retiredItems().length }})
+      </h2>
+
+      <div class="equipment-grid">
+        <article *ngFor="let item of retiredItems()" class="equipment-card">
+          <div class="card-top">
+            <div class="item-identity">
+              <div class="item-name-row">
+                <span class="item-name">{{ item.name }}</span>
+              </div>
+              <p class="item-type">
+                {{ item.typeLabel }}<span *ngIf="item.idNumber"> &middot; {{ item.idNumber }}</span>
+              </p>
+            </div>
+            <span class="status-badge" style="background: #f3f4f6; color: #4b5563;">Retired</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
     <p *ngIf="filteredEquipment().length === 0" class="empty-state">No equipment matches these filters.</p>
   </div>
 

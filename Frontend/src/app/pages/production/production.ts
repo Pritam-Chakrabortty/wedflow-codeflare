@@ -7,6 +7,9 @@ import { Toast } from '../../components/toast/toast';
 import { ProductionService, ProductionTicket, CreateTicketRequest, UpdateTicketRequest, EscalationLevel } from '../../services/production.service';
 import { HttpClient } from '@angular/common/http';
 import { Auth } from '../../services/auth';
+import { environment } from '../../../environments/environment';
+import { forkJoin } from 'rxjs';
+
 
 @Component({
   selector: 'app-production',
@@ -63,11 +66,10 @@ export class Production implements OnInit {
     console.log('Loading dropdown data...');
 
     // Load bookings for the modal
-    this.http.get('http://localhost:5001/api/bookings').subscribe({
+    this.http.get(`${environment.apiUrl}/bookings`).subscribe({
       next: (response: any) => {
         console.log('Bookings loaded for modal:', response);
         this.bookings = response.bookings || [];
-        console.log('Bookings array:', this.bookings);
       },
       error: (error) => {
         console.error('Error loading bookings:', error);
@@ -75,12 +77,10 @@ export class Production implements OnInit {
     });
 
     // Load staff for the modal
-    this.http.get('http://localhost:5001/api/staff-members').subscribe({
+    this.http.get(`${environment.apiUrl}/staff-members`).subscribe({
       next: (response: any) => {
         console.log('Staff loaded for modal:', response);
         this.staff = response.users || response.staff || [];
-        console.log('Staff array length:', this.staff.length);
-        console.log('Staff array:', this.staff);
       },
       error: (error) => {
         console.error('Error loading staff:', error);
@@ -279,7 +279,7 @@ export class Production implements OnInit {
     });
 
     try {
-      const response = await fetch(`http://localhost:5001/api/production-tickets/${ticketId}/${type}-files`, {
+      const response = await fetch(`${environment.apiUrl}/production-tickets/${ticketId}/${type}-files`, {
         method: 'POST',
         body: formData,
       });
@@ -311,19 +311,23 @@ export class Production implements OnInit {
   }
 
   onSaveMatrix(): void {
-    // Save all escalation levels
+    if (this.escalationLevels.length === 0) return;
+
     const saveRequests = this.escalationLevels.map(level =>
       this.productionService.saveEscalationMatrix(level.level, level.overdue_hours, level.role, level.priority)
     );
 
-    Promise.all(saveRequests.map(req => req.toPromise())).then(() => {
-      console.log('Escalation matrix saved successfully');
-      this.showToast('Matrix saved', 'Escalation matrix has been updated.');
-      this.isEscalationOpen = false;
-      this.loadEscalationMatrix(); // Reload to get saved values
-    }).catch(error => {
-      console.error('Error saving escalation matrix:', error);
-      this.showToast('Error', 'Failed to save escalation matrix');
+    forkJoin(saveRequests).subscribe({
+      next: () => {
+        console.log('Escalation matrix saved successfully');
+        this.showToast('Matrix saved', 'Escalation matrix has been updated.');
+        this.isEscalationOpen = false;
+        this.loadEscalationMatrix();
+      },
+      error: (error) => {
+        console.error('Error saving escalation matrix:', error);
+        this.showToast('Error', 'Failed to save escalation matrix');
+      }
     });
   }
 

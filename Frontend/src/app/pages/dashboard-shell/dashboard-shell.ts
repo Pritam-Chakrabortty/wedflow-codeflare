@@ -1,6 +1,7 @@
-import { Component, viewChild, OnInit } from '@angular/core';
+import { Component, viewChild, OnInit, inject, computed } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { Sidebar } from '../../components/sidebar/sidebar';
+import { Auth } from '../../services/auth';
 
 @Component({
   selector: 'app-dashboard-shell',
@@ -10,6 +11,7 @@ import { Sidebar } from '../../components/sidebar/sidebar';
   styleUrl: './dashboard-shell.scss',
 })
 export class DashboardShell implements OnInit {
+  private auth = inject(Auth);
   sidebar = viewChild(Sidebar);
 
   toggleMobileSidebar() {
@@ -22,7 +24,6 @@ export class DashboardShell implements OnInit {
   isDarkMode = true;
 
   ngOnInit(): void {
-    // page load-e default dark theme thakbe, tai 'light' class thakbe na
     document.documentElement.classList.toggle('light', !this.isDarkMode);
   }
 
@@ -30,4 +31,13 @@ export class DashboardShell implements OnInit {
     this.isDarkMode = !this.isDarkMode;
     document.documentElement.classList.toggle('light', !this.isDarkMode);
   }
+
+  currentUser = computed(() => this.auth.getUser());
+
+  userInitial = computed(() => {
+    const user = this.currentUser();
+    if (!user) return 'J';
+    const name = user.staff_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+    return name.charAt(0).toUpperCase() || 'J';
+  });
 }

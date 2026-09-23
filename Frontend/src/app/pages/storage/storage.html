@@ -236,7 +236,11 @@
             </div>
 
             <div class="panel-body">
-                <div class="file-list">
+                <div *ngIf="isLoadingFiles()" class="loading-state" style="padding: 32px 0; text-align: center; color: var(--muted-fg);">
+                    <p>Loading files...</p>
+                </div>
+
+                <div *ngIf="!isLoadingFiles()" class="file-list">
                     <div *ngFor="let file of filteredFiles()" class="file-row">
                         <div class="file-icon-box">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"

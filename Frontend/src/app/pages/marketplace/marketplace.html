@@ -1,4 +1,4 @@
-﻿<main class="marketplace-page">
+<main class="marketplace-page">
   <div class="marketplace-inner">
 
     <!-- header: flex flex-col gap-4 border-b pb-6 lg:flex-row lg:items-end lg:justify-between -->
@@ -24,15 +24,24 @@
       </div>
 
       <!-- flex gap-3 text-sm -->
-      <div class="header-stats">
-        <div class="stat-block">
-          <div class="stat-value">{{ verifiedCount() }}</div>
-          <div class="stat-label">Verified profiles</div>
+      <div class="header-actions">
+        <div class="header-stats">
+          <div class="stat-block">
+            <div class="stat-value">{{ verifiedCount() }}</div>
+            <div class="stat-label">Verified profiles</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-value">{{ hiredCount() }}</div>
+            <div class="stat-label">Hired</div>
+          </div>
         </div>
-        <div class="stat-block">
-          <div class="stat-value">{{ hiredCount() }}</div>
-          <div class="stat-label">Hired</div>
-        </div>
+        <button type="button" class="btn-add-profile" (click)="onOpenAddProfile()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"></path>
+            <path d="M12 5v14"></path>
+          </svg>
+          Add Profile
+        </button>
       </div>
     </section>
 
@@ -79,7 +88,7 @@
 
           <div class="select-wrap">
             <button type="button" role="combobox" [attr.aria-expanded]="isServiceMenuOpen()" class="select-trigger"
-              [class.select-trigger--open]="isServiceMenuOpen()" (click)="toggleServiceMenu()">
+              [class.select-trigger--open]="isServiceMenuOpen()" (click)="toggleServiceMenu($event)">
               <span>{{ serviceLabel }}</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -102,7 +111,7 @@
 
           <div class="select-wrap">
             <button type="button" role="combobox" [attr.aria-expanded]="isTypeMenuOpen()" class="select-trigger"
-              [class.select-trigger--open]="isTypeMenuOpen()" (click)="toggleTypeMenu()">
+              [class.select-trigger--open]="isTypeMenuOpen()" (click)="toggleTypeMenu($event)">
               <span>{{ typeLabel }}</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -221,7 +230,7 @@
                     </path>
                   </svg>
                 </a>
-                <button type="button" class="brief-btn">
+                <button type="button" class="brief-btn" (click)="onSendWorkBrief(p)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     aria-hidden="true">
@@ -326,4 +335,17 @@
     (closeModal)="onAssignmentModalClose()"
     (assignmentConfirmed)="onAssignmentConfirmed($event)"
   ></app-work-assignment-modal>
+
+  <app-work-brief-modal
+    [isOpen]="showBriefModal()"
+    [professional]="selectedProfessionalForBrief()"
+    (closeModal)="onBriefModalClose()"
+    (briefSubmitted)="onBriefSubmitted($event)"
+  ></app-work-brief-modal>
+
+  <app-add-profile-modal
+    [isOpen]="showAddProfileModal()"
+    (closeModal)="onAddProfileClose()"
+    (profileAdded)="onProfileAdded($event)"
+  ></app-add-profile-modal>
 </main>

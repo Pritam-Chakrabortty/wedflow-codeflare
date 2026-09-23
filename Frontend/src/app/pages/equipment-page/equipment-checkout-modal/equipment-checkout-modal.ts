@@ -54,12 +54,13 @@ export class EquipmentCheckoutModal implements OnChanges {
     this.isLoadingStaff.set(true);
     this.equipmentService.getStaff().subscribe({
       next: (response) => {
-        const staff = response.users
+        const rawList = response.users || response.staff || [];
+        const staff = rawList
           .filter(user => user.role !== 'client') // Filter out clients, only show staff
           .map(user => {
             // Build name without showing null for missing last name
-            let name = user.staff_name || user.first_name || '';
-            if (user.last_name) {
+            let name = user.staff_name || user.name || user.first_name || '';
+            if (user.last_name && !name.includes(user.last_name)) {
               name += ` ${user.last_name}`;
             }
             name = name.trim();

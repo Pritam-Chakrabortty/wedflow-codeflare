@@ -4,6 +4,7 @@ import { StudioBranding } from './studio-branding/studio-branding';
 import { AutomationRules } from './automation-rules/automation-rules';
 import { EmailStudio } from './email-studio/email-studio';
 import { Auth } from '../../services/auth';
+import { environment } from '../../../environments/environment';
 
 interface SettingsCard {
   key: string;
@@ -94,7 +95,7 @@ export class Settings implements OnInit {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch('http://localhost:5001/api/workspace/settings', {
+      const response = await fetch(`${environment.apiUrl}/workspace/settings`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -175,7 +176,7 @@ export class Settings implements OnInit {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch('http://localhost:5001/api/workspace/settings', {
+      const response = await fetch(`${environment.apiUrl}/workspace/settings`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -205,7 +206,7 @@ export class Settings implements OnInit {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch('http://localhost:5001/api/workspace/settings', {
+      const response = await fetch(`${environment.apiUrl}/workspace/settings`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

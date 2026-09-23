@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface ProductionTicket {
   id: string;
@@ -15,6 +16,7 @@ export interface ProductionTicket {
   assignee_email: string | null;
   deadline: string;
   is_overdue: boolean;
+  is_acknowledged?: boolean;
   escalation_level: number | null;
   escalation_role: string | null;
   material_note: string | null;
@@ -78,8 +80,8 @@ export interface EscalationMatrixResponse {
 
 @Injectable({ providedIn: 'root' })
 export class ProductionService {
-  private readonly apiUrl = 'http://localhost:5001/api/production-tickets';
-  private readonly escalationApiUrl = 'http://localhost:5001/api/escalation-matrix';
+  private readonly apiUrl = `${environment.apiUrl}/production-tickets`;
+  private readonly escalationApiUrl = `${environment.apiUrl}/escalation-matrix`;
 
   constructor(private http: HttpClient) {}
 

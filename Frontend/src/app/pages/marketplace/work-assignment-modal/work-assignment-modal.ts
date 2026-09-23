@@ -223,7 +223,7 @@ export class WorkAssignmentModal {
 
     const staffData = {
       name: this.workRequest?.professionalName,
-      email: this.workRequest?.professionalEmail || 'no-email@example.com', // Fallback if no email
+      email: this.workRequest?.professionalEmail || 'no-email@example.com',
       phone: this.workRequest?.professionalPhone,
       role: 'freelancer',
       availability: 'available',
@@ -231,58 +231,74 @@ export class WorkAssignmentModal {
       notes: `Added from marketplace: ${this.workRequest?.project}`
     };
 
-    console.log('Creating staff member:', staffData);
-
     this.http.post(`${this.apiUrl}/staff`, staffData, {
       headers: this.getAuthHeaders()
     }).subscribe({
       next: (staffResponse: any) => {
-        console.log('Staff response:', staffResponse);
         const staffId = staffResponse.member?.id || staffResponse.staff?.id;
-
-        if (!staffId) {
-          this.isSubmitting = false;
-          console.error('No staff ID in response:', staffResponse);
-          alert('Failed to get staff ID. Please try again.');
-          return;
+        if (staffId) {
+          this.createCrewAssignment(staffId);
+        } else {
+          this.fallbackSearchAndAssign(staffData);
         }
-
-        const crewAssignmentData = {
-          booking_event_id: this.assignmentData.eventDayId,
-          staff_id: staffId,
-          assigned_role: this.assignmentData.assignmentRole,
-          assignment_date: new Date().toISOString().slice(0, 10),
-          start_time: this.assignmentData.reportTime,
-          status: 'assigned',
-          notes: `Assigned from marketplace request: ${this.workRequest?.project}`
-        };
-
-        console.log('Creating crew assignment:', crewAssignmentData);
-
-        this.http.post(`${this.apiUrl}/crew-assignments`, crewAssignmentData, {
-          headers: this.getAuthHeaders()
-        }).subscribe({
-          next: (assignmentResponse) => {
-            console.log('Assignment response:', assignmentResponse);
-            this.isSubmitting = false;
-            this.assignmentConfirmed.emit(this.assignmentData);
-            this.resetForm();
-            this.closeModal.emit();
-            alert('Assignment confirmed successfully! Professional has been notified.');
-          },
-          error: (assignmentError) => {
-            this.isSubmitting = false;
-            console.error('Error creating assignment:', assignmentError);
-            console.error('Error details:', assignmentError.error || assignmentError.message);
-            alert(`Failed to create assignment: ${assignmentError.error?.message || assignmentError.message || 'Unknown error'}. Please try again.`);
-          }
-        });
       },
       error: (staffError) => {
+        console.warn('Staff creation returned error or conflict, attempting fallback search...', staffError);
+        this.fallbackSearchAndAssign(staffData);
+      }
+    });
+  }
+
+  private fallbackSearchAndAssign(staffData: any) {
+    this.http.get<{ success: boolean; staff?: any[]; users?: any[] }>(`${this.apiUrl}/staff`, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: (response) => {
+        const list = response.staff || response.users || [];
+        const found = list.find((s: any) => 
+          (s.email && staffData.email && s.email.toLowerCase() === staffData.email.toLowerCase()) ||
+          (s.staff_name && s.staff_name.toLowerCase() === staffData.name?.toLowerCase()) ||
+          (s.name && s.name.toLowerCase() === staffData.name?.toLowerCase())
+        );
+        if (found?.id) {
+          this.createCrewAssignment(found.id);
+        } else {
+          this.isSubmitting = false;
+          alert('Failed to create or locate staff member. Please check staff management.');
+        }
+      },
+      error: (err) => {
         this.isSubmitting = false;
-        console.error('Error creating staff member:', staffError);
-        console.error('Error details:', staffError.error || staffError.message);
-        alert(`Failed to create staff member: ${staffError.error?.message || staffError.message || 'Unknown error'}. Please try again.`);
+        alert('Failed to search staff members. Please try again.');
+      }
+    });
+  }
+
+  private createCrewAssignment(staffId: string) {
+    const crewAssignmentData = {
+      booking_event_id: this.assignmentData.eventDayId,
+      staff_id: staffId,
+      assigned_role: this.assignmentData.assignmentRole,
+      assignment_date: new Date().toISOString().slice(0, 10),
+      start_time: this.assignmentData.reportTime,
+      status: 'assigned',
+      notes: `Assigned from marketplace request: ${this.workRequest?.project}`
+    };
+
+    this.http.post(`${this.apiUrl}/crew-assignments`, crewAssignmentData, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: (assignmentResponse) => {
+        this.isSubmitting = false;
+        this.assignmentConfirmed.emit(this.assignmentData);
+        this.resetForm();
+        this.closeModal.emit();
+        alert('Assignment confirmed successfully! Professional has been notified.');
+      },
+      error: (assignmentError) => {
+        this.isSubmitting = false;
+        console.error('Error creating assignment:', assignmentError);
+        alert(`Failed to create assignment: ${assignmentError.error?.message || assignmentError.message || 'Unknown error'}. Please try again.`);
       }
     });
   }

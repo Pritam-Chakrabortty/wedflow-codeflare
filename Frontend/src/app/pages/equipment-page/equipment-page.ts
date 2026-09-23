@@ -86,6 +86,8 @@ export class Equipment implements OnInit {
 
   availableItems = computed(() => this.filteredEquipment().filter((i) => i.status === 'available'));
   checkedOutItems = computed(() => this.filteredEquipment().filter((i) => i.status === 'assigned' || i.status === 'checked_out'));
+  maintenanceItems = computed(() => this.filteredEquipment().filter((i) => i.status === 'maintenance'));
+  retiredItems = computed(() => this.filteredEquipment().filter((i) => i.status === 'retired'));
 
   totalAvailable = computed(() => this.equipment().filter((i) => i.status === 'available').length);
   totalCheckedOut = computed(() => this.equipment().filter((i) => i.status === 'assigned' || i.status === 'checked_out').length);
@@ -184,7 +186,7 @@ export class Equipment implements OnInit {
 
   // ==== Mark Returned ====
   markReturned(item: EquipmentItem) {
-    this.equipmentService.updateEquipment(item.id, { status: 'available' }).subscribe({
+    this.equipmentService.returnEquipment(item.id).subscribe({
       next: (response) => {
         this.equipment.update((list) =>
           list.map((i) =>

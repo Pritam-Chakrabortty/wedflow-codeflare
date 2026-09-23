@@ -55,14 +55,6 @@ export interface CheckoutPayload {
   notes?: string;
 }
 
-export interface CheckoutPayload {
-  equipmentId: string;
-  staffId: string;
-  staffName: string;
-  expectedReturnDate?: string;
-  notes?: string;
-}
-
 @Injectable({
   providedIn: 'root'
 })
@@ -131,8 +123,13 @@ export class EquipmentService {
   }
 
   // Get staff members for checkout from User Management
-  getStaff(): Observable<{ success: boolean; users: any[]; count: number }> {
-    return this.http.get<{ success: boolean; users: any[]; count: number }>(`${this.apiUrl}/users`);
+  getStaff(): Observable<{ success: boolean; users?: any[]; staff?: any[]; count: number }> {
+    return this.http.get<{ success: boolean; users?: any[]; staff?: any[]; count: number }>(`${this.apiUrl}/users`);
+  }
+
+  // Return equipment and close active assignment
+  returnEquipment(equipmentId: string): Observable<{ success: boolean; message: string }> {
+    return this.http.put<{ success: boolean; message: string }>(`${this.apiUrl}/equipment-assignments/return-by-equipment/${equipmentId}`, {});
   }
 
   // Update assignment (for returns)
@@ -152,6 +149,9 @@ export class EquipmentService {
       typeLabel: this.mapTypeToLabel(dbEquipment.equipment_type),
       idNumber: dbEquipment.serial_number,
       status: dbEquipment.status as EquipmentStatus,
+      checkedOutWith: dbEquipment.checked_out_with || undefined,
+      checkedOutSince: dbEquipment.checked_out_since ? new Date(dbEquipment.checked_out_since) : undefined,
+      checkedOutDue: dbEquipment.checked_out_due ? new Date(dbEquipment.checked_out_due) : undefined,
       purchaseDate: dbEquipment.purchase_date,
       purchasePrice: dbEquipment.purchase_price,
       notes: dbEquipment.notes

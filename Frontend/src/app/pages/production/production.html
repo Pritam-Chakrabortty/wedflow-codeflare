@@ -119,6 +119,9 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
             Escalation L{{ t.escalation_level }} · {{ t.escalation_role }}
           </span>
+          <span class="badge" style="background: rgba(31, 143, 71, 0.25); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.4);" *ngIf="t.is_acknowledged">
+            Acknowledged
+          </span>
           <span class="badge priority-badge" [ngClass]="'priority-' + t.priority">{{ priorityLabel(t.priority) }}</span>
         </div>
         <div class="ticket-meta">
@@ -139,7 +142,7 @@
         </div>
       </div>
       <div class="ticket-actions">
-        <button class="btn-outline btn-sm" *ngIf="t.escalation_level" (click)="onAcknowledge(t)">Acknowledge</button>
+        <button class="btn-outline btn-sm" *ngIf="t.escalation_level && !t.is_acknowledged" (click)="onAcknowledge(t)">Acknowledge</button>
         <button class="icon-btn" type="button" (click)="onEditTicket(t)" aria-label="Edit ticket">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
         </button>

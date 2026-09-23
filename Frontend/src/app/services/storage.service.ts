@@ -172,8 +172,9 @@ export class StorageService {
       'edited': 'Edited', 
       'album': 'Album',
       'final': 'Final',
+      'other': 'Other',
       'general': 'Other'
     };
-    return categoryMap[category.toLowerCase()] || 'Other';
+    return categoryMap[category?.toLowerCase()] || 'Other';
   }
 }
