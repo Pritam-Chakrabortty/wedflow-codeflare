@@ -33,7 +33,7 @@ export class AddProfileModal {
   @Output() profileAdded = new EventEmitter<Professional>();
 
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5001/api';
+  private apiUrl = 'https://wedflow-codeflare.onrender.com/api';
 
   isSubmitting = false;
   errorMessage: string | null = null;

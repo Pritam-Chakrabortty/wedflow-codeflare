@@ -22,7 +22,7 @@ async function simpleTest() {
 
     // Test GET endpoint using native fetch (Node 18+)
     console.log('\nTesting GET /api/workspace/settings...');
-    const getResponse = await fetch('http://localhost:5001/api/workspace/settings', {
+    const getResponse = await fetch('https://wedflow-codeflare.onrender.com/api/workspace/settings', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -44,7 +44,7 @@ async function simpleTest() {
 
     // Test PUT endpoint
     console.log('\nTesting PUT /api/workspace/settings...');
-    const putResponse = await fetch('http://localhost:5001/api/workspace/settings', {
+    const putResponse = await fetch('https://wedflow-codeflare.onrender.com/api/workspace/settings', {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,

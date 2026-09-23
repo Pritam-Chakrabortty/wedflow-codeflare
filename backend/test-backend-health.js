@@ -2,7 +2,7 @@ const http = require('http');
 
 async function testBackendHealth() {
   return new Promise((resolve) => {
-    http.get('http://localhost:5001/api/health', (res) => {
+    http.get('https://wedflow-codeflare.onrender.com/api/health', (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {

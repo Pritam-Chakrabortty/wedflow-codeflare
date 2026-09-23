@@ -65,7 +65,7 @@ export class VerifyOtp {
 
     try {
       console.log('Sending OTP verification request for email:', email, 'OTP:', this.otp());
-      const response = await fetch('http://localhost:5001/api/auth/verify-otp', {
+      const response = await fetch('https://wedflow-codeflare.onrender.com/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -108,7 +108,7 @@ export class VerifyOtp {
     this.errorMessage.set('');
 
     try {
-      const response = await fetch('http://localhost:5001/api/auth/send-otp', {
+      const response = await fetch('https://wedflow-codeflare.onrender.com/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, turnstileToken: 'resend' }),

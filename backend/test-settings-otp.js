@@ -6,7 +6,7 @@ async function testSettingsWithOTP() {
 
     // Step 1: Send OTP (bypass Turnstile for testing)
     console.log('1. Sending OTP...');
-    const otpResponse = await fetch('http://localhost:5001/api/auth/send-otp', {
+    const otpResponse = await fetch('https://wedflow-codeflare.onrender.com/api/auth/send-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -65,7 +65,7 @@ async function testWorkspaceEndpoints(token) {
   try {
     // Test GET endpoint
     console.log('\n2. Testing GET /api/workspace/settings...');
-    const getResponse = await fetch('http://localhost:5001/api/workspace/settings', {
+    const getResponse = await fetch('https://wedflow-codeflare.onrender.com/api/workspace/settings', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -84,7 +84,7 @@ async function testWorkspaceEndpoints(token) {
 
     // Test PUT endpoint
     console.log('\n3. Testing PUT /api/workspace/settings...');
-    const putResponse = await fetch('http://localhost:5001/api/workspace/settings', {
+    const putResponse = await fetch('https://wedflow-codeflare.onrender.com/api/workspace/settings', {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,

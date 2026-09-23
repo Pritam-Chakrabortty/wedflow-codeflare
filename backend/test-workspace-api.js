@@ -37,7 +37,7 @@ async function testWorkspaceAPI() {
     console.log('\n2. Testing GET /api/workspace/settings...');
     const fetch = (await import('node-fetch')).default;
     
-    const getResponse = await fetch('http://localhost:5001/api/workspace/settings', {
+    const getResponse = await fetch('https://wedflow-codeflare.onrender.com/api/workspace/settings', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -56,7 +56,7 @@ async function testWorkspaceAPI() {
 
     // Step 3: Test PUT /api/workspace/settings
     console.log('\n3. Testing PUT /api/workspace/settings...');
-    const putResponse = await fetch('http://localhost:5001/api/workspace/settings', {
+    const putResponse = await fetch('https://wedflow-codeflare.onrender.com/api/workspace/settings', {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -80,8 +80,8 @@ export interface StaffListResponse {
 
 @Injectable({ providedIn: 'root' })
 export class CrewAssignmentService {
-  private readonly apiUrl = 'http://localhost:5001/api/crew-assignments';
-  private readonly staffApiUrl = 'http://localhost:5001/api/staff-members';
+  private readonly apiUrl = 'https://wedflow-codeflare.onrender.com/api/crew-assignments';
+  private readonly staffApiUrl = 'https://wedflow-codeflare.onrender.com/api/staff-members';
 
   constructor(private http: HttpClient) {}
 

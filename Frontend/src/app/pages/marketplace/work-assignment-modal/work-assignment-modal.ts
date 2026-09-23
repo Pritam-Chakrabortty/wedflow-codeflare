@@ -57,7 +57,7 @@ export class WorkAssignmentModal {
   @Output() closeModal = new EventEmitter<void>();
   @Output() assignmentConfirmed = new EventEmitter<AssignmentData>();
 
-  private apiUrl = 'http://localhost:5001/api';
+  private apiUrl = 'https://wedflow-codeflare.onrender.com/api';
 
   bookings: Booking[] = [];
   eventDays: EventDay[] = [];

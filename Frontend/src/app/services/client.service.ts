@@ -44,7 +44,7 @@ export interface ClientResponse {
   providedIn: 'root',
 })
 export class ClientService {
-  private apiUrl = 'http://localhost:5001/api/clients';
+  private apiUrl = 'https://wedflow-codeflare.onrender.com/api/clients';
 
   constructor(private http: HttpClient) {}
 

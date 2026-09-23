@@ -49,7 +49,7 @@ export interface DashboardCalendarResponse {
   providedIn: 'root'
 })
 export class DashboardService {
-  private apiUrl = 'http://localhost:5001/api/dashboard';
+  private apiUrl = 'https://wedflow-codeflare.onrender.com/api/dashboard';
 
   constructor(private http: HttpClient) {}
 

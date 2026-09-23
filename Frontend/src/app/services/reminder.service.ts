@@ -55,7 +55,7 @@ export interface ReminderResponse {
 
 @Injectable({ providedIn: 'root' })
 export class ReminderService {
-  private readonly apiUrl = 'http://localhost:5001/api/reminders';
+  private readonly apiUrl = 'https://wedflow-codeflare.onrender.com/api/reminders';
 
   constructor(private http: HttpClient) {}
 

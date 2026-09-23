@@ -1,6 +1,6 @@
 const http = require('http');
 
-const API_BASE = 'http://localhost:5001/api';
+const API_BASE = 'https://wedflow-codeflare.onrender.com/api';
 
 // Test the marketplace API endpoints
 async function testMarketplaceAPI() {

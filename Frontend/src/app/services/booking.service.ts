@@ -139,7 +139,7 @@ export interface StaffMember {
 
 @Injectable({ providedIn: 'root' })
 export class BookingService {
-  private readonly apiUrl = 'http://localhost:5001/api/bookings';
+  private readonly apiUrl = 'https://wedflow-codeflare.onrender.com/api/bookings';
 
   constructor(private http: HttpClient) {}
 
@@ -228,70 +228,70 @@ export class BookingService {
 
   // Get staff from User Management API (staff members)
   getStaff(): Observable<{ success: boolean; users: any[]; count: number }> {
-    return this.http.get<{ success: boolean; users: any[]; count: number }>('http://localhost:5001/api/staff-members');
+    return this.http.get<{ success: boolean; users: any[]; count: number }>('https://wedflow-codeflare.onrender.com/api/staff-members');
   }
 
   // Get packages from backend
   getPackages(): Observable<{ success: boolean; packages: any[]; count: number }> {
-    return this.http.get<{ success: boolean; packages: any[]; count: number }>('http://localhost:5001/api/packages');
+    return this.http.get<{ success: boolean; packages: any[]; count: number }>('https://wedflow-codeflare.onrender.com/api/packages');
   }
 
   // Event Days API methods
   addBookingEvent(bookingId: string, eventData: any): Observable<{ success: boolean; event: any }> {
-    return this.http.post<{ success: boolean; event: any }>('http://localhost:5001/api/booking-events', {
+    return this.http.post<{ success: boolean; event: any }>('https://wedflow-codeflare.onrender.com/api/booking-events', {
       booking_id: bookingId,
       ...eventData
     });
   }
 
   updateBookingEvent(eventId: string, eventData: any): Observable<{ success: boolean; event: any }> {
-    return this.http.put<{ success: boolean; event: any }>(`http://localhost:5001/api/booking-events/${eventId}`, eventData);
+    return this.http.put<{ success: boolean; event: any }>(`https://wedflow-codeflare.onrender.com/api/booking-events/${eventId}`, eventData);
   }
 
   deleteBookingEvent(eventId: string): Observable<{ success: boolean; message: string }> {
-    return this.http.delete<{ success: boolean; message: string }>(`http://localhost:5001/api/booking-events/${eventId}`);
+    return this.http.delete<{ success: boolean; message: string }>(`https://wedflow-codeflare.onrender.com/api/booking-events/${eventId}`);
   }
 
   deleteBooking(bookingId: string): Observable<{ success: boolean; message: string }> {
-    return this.http.delete<{ success: boolean; message: string }>(`http://localhost:5001/api/bookings/${bookingId}`);
+    return this.http.delete<{ success: boolean; message: string }>(`https://wedflow-codeflare.onrender.com/api/bookings/${bookingId}`);
   }
 
   // Crew Assignment API methods
   addCrewAssignment(assignmentData: any): Observable<{ success: boolean; crewAssignment?: any; assignment?: any }> {
-    return this.http.post<{ success: boolean; crewAssignment?: any; assignment?: any }>('http://localhost:5001/api/crew-assignments', assignmentData);
+    return this.http.post<{ success: boolean; crewAssignment?: any; assignment?: any }>('https://wedflow-codeflare.onrender.com/api/crew-assignments', assignmentData);
   }
 
   updateCrewAssignment(assignmentId: string, assignmentData: any): Observable<{ success: boolean; assignment: any }> {
-    return this.http.put<{ success: boolean; assignment: any }>(`http://localhost:5001/api/crew-assignments/${assignmentId}`, assignmentData);
+    return this.http.put<{ success: boolean; assignment: any }>(`https://wedflow-codeflare.onrender.com/api/crew-assignments/${assignmentId}`, assignmentData);
   }
 
   deleteCrewAssignment(assignmentId: string): Observable<{ success: boolean; message: string }> {
-    return this.http.delete<{ success: boolean; message: string }>(`http://localhost:5001/api/crew-assignments/${assignmentId}`);
+    return this.http.delete<{ success: boolean; message: string }>(`https://wedflow-codeflare.onrender.com/api/crew-assignments/${assignmentId}`);
   }
 
   // Payment API methods
   addPayment(paymentData: any): Observable<{ success: boolean; payment: any }> {
-    return this.http.post<{ success: boolean; payment: any }>('http://localhost:5001/api/payments', paymentData);
+    return this.http.post<{ success: boolean; payment: any }>('https://wedflow-codeflare.onrender.com/api/payments', paymentData);
   }
 
   updatePayment(paymentId: string, paymentData: any): Observable<{ success: boolean; payment: any }> {
-    return this.http.put<{ success: boolean; payment: any }>(`http://localhost:5001/api/payments/${paymentId}`, paymentData);
+    return this.http.put<{ success: boolean; payment: any }>(`https://wedflow-codeflare.onrender.com/api/payments/${paymentId}`, paymentData);
   }
 
   deletePayment(paymentId: string): Observable<{ success: boolean; message: string }> {
-    return this.http.delete<{ success: boolean; message: string }>(`http://localhost:5001/api/payments/${paymentId}`);
+    return this.http.delete<{ success: boolean; message: string }>(`https://wedflow-codeflare.onrender.com/api/payments/${paymentId}`);
   }
 
   // Delivery API methods
   addDelivery(deliveryData: any): Observable<{ success: boolean; delivery: any }> {
-    return this.http.post<{ success: boolean; delivery: any }>('http://localhost:5001/api/deliveries', deliveryData);
+    return this.http.post<{ success: boolean; delivery: any }>('https://wedflow-codeflare.onrender.com/api/deliveries', deliveryData);
   }
 
   updateDelivery(deliveryId: string, deliveryData: any): Observable<{ success: boolean; delivery: any }> {
-    return this.http.put<{ success: boolean; delivery: any }>(`http://localhost:5001/api/deliveries/${deliveryId}`, deliveryData);
+    return this.http.put<{ success: boolean; delivery: any }>(`https://wedflow-codeflare.onrender.com/api/deliveries/${deliveryId}`, deliveryData);
   }
 
   deleteDelivery(deliveryId: string): Observable<{ success: boolean; message: string }> {
-    return this.http.delete<{ success: boolean; message: string }>(`http://localhost:5001/api/deliveries/${deliveryId}`);
+    return this.http.delete<{ success: boolean; message: string }>(`https://wedflow-codeflare.onrender.com/api/deliveries/${deliveryId}`);
   }
 }

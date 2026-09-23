@@ -166,7 +166,7 @@ export class Login implements AfterViewInit, OnDestroy {
     this.isSubmitting.set(true);
 
     try {
-      const response = await fetch('http://localhost:5001/api/auth/send-otp', {
+      const response = await fetch('https://wedflow-codeflare.onrender.com/api/auth/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +208,7 @@ export class Login implements AfterViewInit, OnDestroy {
     this.isVerifying.set(true);
 
     try {
-      const response = await fetch('http://localhost:5001/api/auth/verify-otp', {
+      const response = await fetch('https://wedflow-codeflare.onrender.com/api/auth/verify-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

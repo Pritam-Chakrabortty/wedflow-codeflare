@@ -323,7 +323,7 @@ export class WorkflowBoard implements OnInit, AfterViewInit {
     this.isLoading = true;
     this.error = null;
 
-    this.http.get('http://localhost:5001/api/bookings').subscribe({
+    this.http.get('https://wedflow-codeflare.onrender.com/api/bookings').subscribe({
       next: (response) => {
         console.log('Bookings API test successful:', response);
         this.error = 'Bookings API working. Check console for details.';

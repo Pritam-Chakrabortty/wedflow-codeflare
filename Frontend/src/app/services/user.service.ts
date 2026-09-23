@@ -56,7 +56,7 @@ export interface DeleteResponse {
   providedIn: 'root',
 })
 export class UserService {
-  private apiUrl = 'http://localhost:5001/api/users';
+  private apiUrl = 'https://wedflow-codeflare.onrender.com/api/users';
 
   constructor(private http: HttpClient) {}
 

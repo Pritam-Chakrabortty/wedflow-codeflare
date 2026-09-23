@@ -50,7 +50,7 @@ export interface UploadFileData {
   providedIn: 'root'
 })
 export class StorageService {
-  private apiUrl = 'http://localhost:5001/api';
+  private apiUrl = 'https://wedflow-codeflare.onrender.com/api';
 
   constructor(private http: HttpClient) {}
 
