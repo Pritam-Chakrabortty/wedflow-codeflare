@@ -9,6 +9,10 @@ export interface AuthUser {
   last_name?: string | null;
   phone_number?: string | null;
   staff_name?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  phoneNumber?: string | null;
+  staffName?: string | null;
 }
 
 @Injectable({
