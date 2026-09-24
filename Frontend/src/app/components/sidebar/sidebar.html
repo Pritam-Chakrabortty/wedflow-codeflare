@@ -172,13 +172,13 @@
 
         <div class="sidebar-footer">
             <div class="user-block">
-                <div class="user-avatar">J</div>
+                <div class="user-avatar">{{ userInitial() }}</div>
                 <div class="user-info">
-                    <div class="user-name">Joyeeta Das</div>
-                    <div class="user-role">Administrator</div>
+                    <div class="user-name">{{ userName() }}</div>
+                    <div class="user-role">{{ userRole() }}</div>
                 </div>
                 <div class="user-actions">
-                    <button class="logout-btn" type="button">
+                    <button class="logout-btn" type="button" (click)="logout()" title="Logout">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                             class="lucide lucide-log-out h-4 w-4" aria-hidden="true">
