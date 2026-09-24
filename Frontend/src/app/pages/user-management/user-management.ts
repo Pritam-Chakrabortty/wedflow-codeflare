@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { UserModal, NewUserData, EditUserData } from './user-modal/user-modal';
+import { UserModal, NewUserData, EditUserData, UserRoleValue } from './user-modal/user-modal';
 import { Toast } from '../../components/toast/toast';
 import { UserService, User } from '../../services/user.service';
 
@@ -20,8 +20,10 @@ interface AppUser {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   staffName?: string;
   role: Role;
+  rawRole: UserRoleValue;
   joinedAt: string;
   active: boolean;
 }
@@ -94,13 +96,15 @@ export class UserManagement implements OnInit {
   }
 
   private mapUserToAppUser(user: User): AppUser {
-    const roleLabel = this.roleLabelMap[user.role] || user.role;
+    const roleLabel = this.roleLabelMap[user.role] || (user.role as Role);
     return {
       id: user.id,
       name: `${user.first_name} ${user.last_name || ''}`.trim(),
       email: user.email,
+      phone: user.phone_number || undefined,
       staffName: user.staff_name || undefined,
       role: roleLabel,
+      rawRole: (user.role as UserRoleValue) || 'photographer',
       joinedAt: user.created_at,
       active: user.is_active
     };
@@ -248,25 +252,16 @@ export class UserManagement implements OnInit {
   }
 
   onEdit(user: AppUser): void {
-    // Fetch full user data including phone and address
-    this.userService.getUserById(user.id).subscribe({
-      next: (response) => {
-        const fullUser = response.user;
-        this.editUserData = {
-          id: fullUser.id,
-          name: `${fullUser.first_name} ${fullUser.last_name || ''}`.trim(),
-          email: fullUser.email,
-          phone: fullUser.phone_number || '',
-          role: (this.reverseRoleLabelMap as any)[fullUser.role] || 'photographer',
-          address: '' // Address not available in User interface
-        };
-        this.showNewUserModal = true;
-      },
-      error: (error) => {
-        console.error('Error fetching user details:', error);
-        this.showToast('error', 'Error', 'Failed to load user details');
-      }
-    });
+    this.editUserData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      role: user.rawRole,
+      address: ''
+    };
+    this.showNewUserModal = true;
+    this.cdr.detectChanges();
   }
 
   onDelete(user: AppUser): void {
