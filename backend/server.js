@@ -998,6 +998,32 @@ app.get('/api/users', requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/users/:id - Get a single user by id
+app.get('/api/users/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT id, email, first_name, last_name, phone_number, role, staff_name, is_active, is_verified, profile_image, created_at, updated_at
+       FROM users
+       WHERE id = $1 AND workspace_id = $2`,
+      [id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({
+      success: true,
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error fetching user details:', error);
+    return res.status(500).json({ error: 'Failed to fetch user details' });
+  }
+});
+
 // GET /api/staff-members - List staff members (non-client users) for crew assignment
 app.get('/api/staff-members', async (req, res) => {
   try {
