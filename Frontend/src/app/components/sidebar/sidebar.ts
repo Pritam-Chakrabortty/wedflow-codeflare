@@ -23,21 +23,30 @@ export class Sidebar {
 
   userName = computed(() => {
     const user = this.currentUser();
-    if (!user) return 'Joyeeta Das';
-    if (user.staff_name) return user.staff_name;
-    const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
-    return name || user.email || 'Joyeeta Das';
+    if (!user) return 'User';
+    const staff = user.staffName || user.staff_name;
+    if (staff) return staff;
+    const first = user.firstName || user.first_name || '';
+    const last = user.lastName || user.last_name || '';
+    const fullName = `${first} ${last}`.trim();
+    if (fullName) return fullName;
+    if (user.email) {
+      const emailPrefix = user.email.split('@')[0];
+      return emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+    }
+    return 'User';
   });
 
   userRole = computed(() => {
     const role = this.currentUser()?.role;
-    if (role === 'admin') return 'Administrator';
-    if (role) return role.replace(/_/g, ' ').toUpperCase();
-    return 'Administrator';
+    if (!role) return 'User';
+    if (role.toLowerCase() === 'admin') return 'Administrator';
+    return role.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
   });
 
   userInitial = computed(() => {
-    return this.userName().charAt(0).toUpperCase() || 'J';
+    const name = this.userName();
+    return name ? name.charAt(0).toUpperCase() : 'U';
   });
 
   logout(): void {
