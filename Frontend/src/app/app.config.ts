@@ -9,7 +9,7 @@ const authInterceptor = (req: HttpRequest<unknown>, next: HttpHandlerFn) => {
   const auth = inject(Auth);
   const token = auth.getToken();
 
-  if (!token || !req.url.startsWith('http://localhost:5001')) {
+  if (!token) {
     return next(req);
   }
 
