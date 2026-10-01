@@ -459,7 +459,7 @@ function generateToken(userId, email, role, workspaceId) {
   return jwt.sign(
     { userId, email, role, workspace_id: workspaceId },
     process.env.JWT_SECRET,
-    { expiresIn: '7d' }
+    { expiresIn: '30d' }
   );
 }
 
