@@ -24,12 +24,19 @@ export class DashboardShell implements OnInit {
   isDarkMode = true;
 
   ngOnInit(): void {
+    // Load theme preference from localStorage
+    const savedTheme = localStorage.getItem('wedflow_theme');
+    if (savedTheme !== null) {
+      this.isDarkMode = savedTheme === 'dark';
+    }
     document.documentElement.classList.toggle('light', !this.isDarkMode);
   }
 
   toggleTheme() {
     this.isDarkMode = !this.isDarkMode;
     document.documentElement.classList.toggle('light', !this.isDarkMode);
+    // Save theme preference to localStorage
+    localStorage.setItem('wedflow_theme', this.isDarkMode ? 'dark' : 'light');
   }
 
   currentUser = computed(() => this.auth.getUser());
