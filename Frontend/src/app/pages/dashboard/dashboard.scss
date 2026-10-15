@@ -446,6 +446,18 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: grab;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// jei din-er upor hover korchi, shetake highlight
+.day-cell.cdk-drop-list-dragging {
+  border-color: hsl(var(--primary));
+  background: rgba(243, 180, 22, 0.12);
 }
 
 // ---- Side panel ----
