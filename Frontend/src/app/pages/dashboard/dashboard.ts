@@ -1,3 +1,4 @@
+import { CdkDrag, CdkDragDrop, CdkDropList, CdkDropListGroup } from '@angular/cdk/drag-drop';
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -17,7 +18,8 @@ interface StatCard {
 }
 
 interface DayEvent {
-  id: string;
+  id: string;        // booking id (routerLink-er jonno)
+  eventId: string;   // booking_events.id (date reschedule-er jonno)
   name: string;
   location: string;
   packageName: string;
@@ -44,8 +46,7 @@ interface ActionItem {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './dashboard.html',
+imports: [CommonModule, FormsModule, RouterLink, CdkDropListGroup, CdkDropList, CdkDrag],  templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
 export class Dashboard implements OnInit {
@@ -252,6 +253,7 @@ export class Dashboard implements OnInit {
           if (!map[key]) map[key] = [];
           map[key].push({
             id: ev.bookingId || ev.id,
+             eventId: String(ev.id),
             name: ev.name,
             location: ev.location,
             packageName: ev.packageName,
@@ -350,6 +352,42 @@ export class Dashboard implements OnInit {
   isOtherMonth(day: CalendarDay): boolean {
     return day.type !== 'current';
   }
+
+  trackDay = (_: number, day: CalendarDay) => day.fullDate.getTime();
+trackEvent = (_: number, ev: DayEvent) => ev.eventId;
+
+onEventDrop(event: CdkDragDrop<CalendarDay>, target: CalendarDay): void {
+  const source = event.previousContainer.data;
+  const ev: DayEvent = event.item.data;
+  if (!source || !ev) return;
+
+  const fromKey = this.dateKey(source.fullDate);
+  const toKey = this.dateKey(target.fullDate);
+  if (fromKey === toKey) return;
+
+  // optimistic update: age UI te soriye dei, fail korle rollback
+  const previousMap = this.eventsByDate();
+  const next = { ...previousMap };
+  next[fromKey] = (next[fromKey] ?? []).filter(e => e.eventId !== ev.eventId);
+  if (next[fromKey].length === 0) delete next[fromKey];
+  next[toKey] = [...(next[toKey] ?? []), ev];
+  this.eventsByDate.set(next);
+
+  this.dashboardService.rescheduleEvent(ev.eventId, this.toApiDate(target.fullDate)).subscribe({
+    next: () => this.loadCalendarEvents(),
+    error: (err) => {
+      console.error('Event reschedule failed:', err);
+      this.eventsByDate.set(previousMap);
+    },
+  });
+}
+
+// toISOString() use korbi na: IST-te date ek din pichiye jay
+private toApiDate(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
 
   private sameDate(a: Date, b: Date): boolean {
     return (

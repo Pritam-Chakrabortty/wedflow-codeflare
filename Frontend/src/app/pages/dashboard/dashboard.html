@@ -279,9 +279,11 @@
         <div class="weekday-row">
           <div *ngFor="let day of weekDays">{{ day }}</div>
         </div>
-        <div class="day-grid">
-          <button type="button" class="day-cell" *ngFor="let day of calendarDays()" [class.faded]="isOtherMonth(day)"
-            [class.selected]="isSelected(day)" [class.is-today]="isToday(day)" (click)="selectDay(day)">
+        <div class="day-grid" cdkDropListGroup>
+          <div class="day-cell" role="button" tabindex="0" *ngFor="let day of calendarDays(); trackBy: trackDay"
+            cdkDropList [cdkDropListData]="day" [cdkDropListSortingDisabled]="true" [class.faded]="isOtherMonth(day)"
+            [class.selected]="isSelected(day)" [class.is-today]="isToday(day)" (click)="selectDay(day)"
+            (keydown.enter)="selectDay(day)" (cdkDropListDropped)="onEventDrop($event, day)">
             <div class="day-cell-top">
               <span class="day-number">{{ day.date }}</span>
               <span class="today-dot" *ngIf="isToday(day)"></span>
@@ -289,13 +291,15 @@
             <div class="day-events" *ngIf="day.events.length > 0">
               <div class="event-count-badge">{{ day.events.length }} event{{ day.events.length > 1 ? 's' : '' }}</div>
               <div class="event-name-list">
+                <div class="event-name-badge" *ngFor="let ev of day.events; trackBy: trackEvent" cdkDrag
+                  [cdkDragData]="ev" [style.background]="ev.colorBg">
                 <div class="event-name-badge" *ngFor="let ev of day.events" [style.background]="ev.colorBg"
                   (mouseenter)="showEventPreview(ev, $event)" (mouseleave)="hideEventPreview()">
                   {{ ev.name }}
                 </div>
               </div>
             </div>
-          </button>
+          </div>
         </div>
       </div>
 
@@ -409,6 +413,10 @@
               <div class="badge" [class.badge-needs-crew]="event.needsCrew" [class.badge-assigned]="!event.needsCrew">
                 {{ event.needsCrew ? 'Needs Crew' : 'Crew Assigned' }}
               </div>
+              <div class="badge" *ngIf="event.needsCrew" style="background: rgba(98, 24, 24, 0.4); color: #f87171;">
+                Needs Crew</div>
+              <div class="badge" *ngIf="!event.needsCrew" style="background: rgba(31, 71, 31, 0.4); color: #4ade80;">
+                Crew Assigned</div>
             </div>
           </div>
         </a>
