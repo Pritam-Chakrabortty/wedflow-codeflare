@@ -257,6 +257,7 @@ categoryOptions: FileTypeOption[] = [
   }
 
   onChooseFile(input: HTMLInputElement) {
+    input.value = '';
     input.click();
   }
 
