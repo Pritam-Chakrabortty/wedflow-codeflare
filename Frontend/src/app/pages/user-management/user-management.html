@@ -14,7 +14,26 @@
     </button>
   </div>
 
-  <div class="role-group" *ngFor="let group of groupedUsers" [attr.data-role]="group.role">
+  <!-- Skeleton rows while loading -->
+  <div class="role-group" *ngIf="isLoading">
+    <span class="skeleton-line" style="width: 140px; height: 1.25rem; margin-bottom: 0.75rem;"></span>
+    <div class="user-list">
+      <div class="user-row" *ngFor="let s of [1, 2, 3, 4]">
+        <div class="user-info">
+          <div class="skeleton-box" style="width: 2.25rem; height: 2.25rem; border-radius: 9999px;"></div>
+          <div class="user-text" style="width: 240px;">
+            <span class="skeleton-line" style="width: 60%; height: 1rem; margin-bottom: 4px;"></span>
+            <span class="skeleton-line skeleton-line--sm" style="width: 80%;"></span>
+          </div>
+        </div>
+        <div class="user-actions">
+          <span class="skeleton-line" style="width: 60px; height: 1.25rem; border-radius: 9999px;"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="role-group" *ngFor="let group of (isLoading ? [] : groupedUsers)" [attr.data-role]="group.role">
     <h2 class="role-title">{{ group.role }} ({{ group.users.length }})</h2>
 
     <div class="user-list">

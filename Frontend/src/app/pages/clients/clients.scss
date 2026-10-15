@@ -45,6 +45,10 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 0;
+  background: linear-gradient(135deg, rgb(245, 196, 71) 0%, rgb(212, 175, 55) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .page-subtitle {
@@ -65,35 +69,47 @@
 .btn-outline,
 .btn-primary {
   display: inline-flex;
-  align-items: space;
-  justify-content: space-between;
-  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   white-space: nowrap;
   border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 500;
   min-height: 2.25rem;
-  padding: 0.8rem 1.2rem;
+  padding: 0.5rem 1rem;
   cursor: pointer;
-  transition: opacity 0.15s ease, background-color 0.15s ease;
+  transition: all 0.2s ease;
 
   svg { flex-shrink: 0; }
 
-  &:hover { opacity: 0.9; }
+  &:hover {
+    transform: translateY(-1px);
+  }
 }
 
 .btn-outline {
   border: 1px solid var(--border-color);
-  background: transparent;
+  background: linear-gradient(135deg, var(--card-bg) 0%, rgba(243, 180, 22, 0.03) 100%);
   color: var(--text-main);
 
-  &:hover { border-color: var(--primary); opacity: 1; }
+  &:hover {
+    border-color: var(--brand);
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, rgba(243, 180, 22, 0.1) 100%);
+    color: rgb(245, 196, 71);
+    box-shadow: 0 2px 8px rgba(243, 180, 22, 0.15);
+  }
 }
 
 .btn-primary {
   border: 1px solid var(--brand);
-  background: var(--brand);
+  background: linear-gradient(135deg, var(--brand) 0%, rgba(212, 175, 55, 0.8) 100%);
   color: var(--brand-foreground);
+
+  &:hover {
+    background: linear-gradient(135deg, rgba(245, 196, 71, 0.9) 0%, rgba(212, 175, 55, 0.7) 100%);
+    box-shadow: 0 2px 8px rgba(243, 180, 22, 0.25);
+  }
 }
 
 .search-input:focus,
@@ -110,11 +126,26 @@
 .clients-card {
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: var(--card-bg);
+  background: linear-gradient(135deg, var(--card-bg) 0%, rgba(243, 180, 22, 0.02) 100%);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(243, 180, 22, 0.3), transparent);
+    opacity: 0.5;
+  }
 }
 
 // ---------- Filter row ----------
@@ -124,7 +155,7 @@
   gap: 0.5rem;
 
   @media (min-width: 768px) {
-    grid-template-columns: minmax(220px, 1fr) 170px 170px auto;
+    grid-template-columns: minmax(220px, 1fr) 140px 140px auto;
   }
 }
 
@@ -147,51 +178,98 @@
   padding: 0.25rem 0.75rem 0.25rem 2rem;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: transparent;
+  background: linear-gradient(135deg, var(--card-bg) 0%, rgba(243, 180, 22, 0.02) 100%);
   color: var(--text-main);
   font-size: 0.875rem;
   outline: none;
+  transition: all 0.2s ease;
 
   &::placeholder { color: var(--text-muted); }
-  &:focus { border-color: var(--primary); }
+  &:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 2px rgba(243, 180, 22, 0.1);
+  }
 }
 
 .date-field {
   position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--card-bg) 0%, rgba(243, 180, 22, 0.02) 100%);
+  padding-left: 0.65rem;
+  transition: all 0.2s ease;
+
+  &:focus-within {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 2px rgba(243, 180, 22, 0.1);
+  }
+}
+
+.date-field-prefix {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--brand);
+  letter-spacing: 0.03em;
+  padding-right: 0.4rem;
+  user-select: none;
 }
 
 .date-input {
   width: 100%;
   height: 2.25rem;
-  padding: 0.25rem 2.5rem 0.25rem 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  padding: 0.25rem 0.25rem 0.25rem 0;
+  border: none;
   background: transparent;
   color: var(--text-main);
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   outline: none;
+  cursor: pointer;
 
-  &::placeholder { color: var(--text-muted); }
-  &:focus { border-color: var(--primary); }
+  &::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0;
+    width: 0;
+    position: absolute;
+    right: 0;
+  }
 }
 
-.calendar-btn {
-  position: absolute;
-  right: 0.25rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 2rem;
-  height: 2rem;
+.date-calendar-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  background: transparent;
   border: none;
+  color: var(--brand);
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.btn-clear-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
   background: transparent;
   color: var(--text-muted);
-  border-radius: 4px;
+  font-size: 0.8rem;
   cursor: pointer;
+  transition: all 0.2s ease;
 
-  &:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.06); }
+  &:hover {
+    color: #ef4444;
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+  }
 }
 
 // ---------- Table ----------
@@ -199,35 +277,39 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .clients-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.875rem;
 
   thead {
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--brand);
   }
 
   th {
     text-align: left;
-    padding: 0.6rem 0.75rem;
-    font-weight: 500;
-    color: var(--text-muted);
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: var(--text-main);
     white-space: nowrap;
+    background: linear-gradient(135deg, var(--secondary) 0%, rgba(243, 180, 22, 0.03) 100%);
   }
 
   td {
-    padding: 0.6rem 0.75rem;
+    padding: 0.75rem 1rem;
     vertical-align: middle;
     border-bottom: 1px solid var(--border-color);
+    transition: background 0.15s ease;
   }
 
   tbody tr {
-    transition: background-color 0.15s ease;
+    transition: all 0.15s ease;
 
-    &:hover { background: rgba(255, 255, 255, 0.03); }
+    &:hover { background: linear-gradient(90deg, rgba(243, 180, 22, 0.03) 0%, transparent 100%); }
     &:last-child td { border-bottom: none; }
   }
 
@@ -252,6 +334,21 @@
   text-overflow: ellipsis;
 }
 
+.booking-date-cell {
+  white-space: nowrap;
+}
+
+.booking-date-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-main);
+  background: hsl(var(--secondary) / 0.7);
+  border: 1px solid var(--border-color);
+}
+
 .actions-group {
   display: flex;
   align-items: center;
@@ -270,12 +367,20 @@
   background: transparent;
   color: var(--text-main);
   cursor: pointer;
+  transition: all 0.2s ease;
 
-  &:hover { background: rgba(255, 255, 255, 0.06); }
+  &:hover {
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, rgba(243, 180, 22, 0.1) 100%);
+    border-color: hsl(var(--primary) / 0.3);
+    transform: scale(1.05);
+  }
 
   &--danger {
-    color: red;
-    &:hover { background: rgba(224, 92, 92, 0.1); }
+    color: rgb(248, 113, 113);
+    &:hover {
+      background: linear-gradient(135deg, rgba(248, 113, 113, 0.2) 0%, rgba(248, 113, 113, 0.1) 100%);
+      border-color: rgba(248, 113, 113, 0.3);
+    }
   }
 }
 
@@ -283,7 +388,27 @@
 .empty-state {
   text-align: center;
   color: var(--text-muted);
-  padding: 1.5rem 0.75rem;
+  padding: 3rem 1rem;
+  font-size: 0.875rem;
+  animation: fadeIn 0.3s ease-out;
+
+  svg {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 // ---------- Loading State ----------

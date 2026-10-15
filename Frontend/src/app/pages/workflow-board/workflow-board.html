@@ -58,7 +58,21 @@
     </div>
   </div>
 
-  <div class="empty-state" *ngIf="isLoading">Loading workflow board...</div>
+  <!-- Skeleton Columns while loading -->
+  <div class="stage-grid" *ngIf="isLoading">
+    <div class="stage-card" *ngFor="let s of [1, 2, 3, 4]">
+      <div class="stage-card-header">
+        <div style="width: 70%;">
+          <span class="skeleton-line" style="width: 80%; height: 1rem; margin-bottom: 4px;"></span>
+          <span class="skeleton-line skeleton-line--sm" style="width: 45%;"></span>
+        </div>
+        <span class="skeleton-line" style="width: 28px; height: 1.25rem; border-radius: 9999px;"></span>
+      </div>
+      <div class="stage-body">
+        <div class="skeleton-box" style="height: 80px; width: 100%; border-radius: 8px; margin-bottom: 0.75rem;" *ngFor="let card of [1, 2]"></div>
+      </div>
+    </div>
+  </div>
 
   <div class="error-state" *ngIf="error">
     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>

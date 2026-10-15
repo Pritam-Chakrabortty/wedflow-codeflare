@@ -19,8 +19,18 @@
       </div>
     </div>
 
-    <div *ngIf="isLoading()" class="loading-state">
-      <p>Loading workspace settings...</p>
+    <!-- Loading Skeleton State -->
+    <div *ngIf="isLoading()" class="settings-grid">
+      <div class="settings-card" *ngFor="let s of [1, 2, 3, 4]" style="cursor: default;">
+        <div class="settings-card-top">
+          <div class="skeleton-box" style="width: 2.5rem; height: 2.5rem; border-radius: 0.5rem;"></div>
+          <span class="skeleton-line" style="width: 1rem; height: 1rem;"></span>
+        </div>
+        <div class="settings-card-body" style="width: 100%;">
+          <span class="skeleton-line" style="width: 60%; height: 1.1rem; margin-bottom: 6px;"></span>
+          <span class="skeleton-line skeleton-line--sm" style="width: 90%;"></span>
+        </div>
+      </div>
     </div>
 
     <div *ngIf="error()" class="error-state">

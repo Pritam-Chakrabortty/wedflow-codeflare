@@ -8,19 +8,7 @@
     </div>
 
     <div class="header-actions">
-      <input #fileInput type="file" accept=".xlsx,.xls,.csv" class="hidden-input" (change)="onImportExcel($event)">
-
-      <button type="button" class="btn-outline" (click)="onTemplate()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <path d="M14 2v6h6"></path>
-          <path d="M4 22V4a2 2 0 0 1 2-2h9l5 5v3"></path>
-          <path d="M8 13h2"></path><path d="M8 17h2"></path><path d="M14 13h2"></path><path d="M14 17h2"></path>
-        </svg>
-        Template
-      </button>
-
-      <button type="button" class="btn-outline" (click)="fileInput.click()">
+      <button type="button" class="btn-outline" (click)="onOpenImportModal()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line>
@@ -57,31 +45,39 @@
         <input type="text" class="search-input" placeholder="Name, phone, email or customer ID" [(ngModel)]="searchTerm">
       </div>
 
-      <div class="date-field">
-        <input type="text" class="date-input" placeholder="DD-MM-YYYY" maxlength="10" inputmode="numeric"
-               aria-label="Customers created from" [(ngModel)]="dateFrom">
-        <button type="button" class="calendar-btn" aria-label="Open calendar">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path>
+      <div class="date-field" (click)="clientFromInput.showPicker()">
+        <span class="date-field-prefix">From</span>
+        <input #clientFromInput type="date" class="date-input" aria-label="Customers created from" [(ngModel)]="dateFrom">
+        <button type="button" class="date-calendar-btn" aria-label="Open Calendar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
           </svg>
         </button>
       </div>
 
-      <div class="date-field">
-        <input type="text" class="date-input" placeholder="DD-MM-YYYY" maxlength="10" inputmode="numeric"
-               aria-label="Customers created to" [(ngModel)]="dateTo">
-        <button type="button" class="calendar-btn" aria-label="Open calendar">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path>
+      <div class="date-field" (click)="clientToInput.showPicker()">
+        <span class="date-field-prefix">To</span>
+        <input #clientToInput type="date" class="date-input" aria-label="Customers created to" [(ngModel)]="dateTo">
+        <button type="button" class="date-calendar-btn" aria-label="Open Calendar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
           </svg>
         </button>
       </div>
-    </div>
 
-    <!-- Loading State -->
-    <div *ngIf="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading clients...</p>
+      <button type="button" class="btn-clear-date" *ngIf="dateFrom || dateTo" (click)="clearDateFilter()" title="Clear date filter">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+        Clear
+      </button>
     </div>
 
     <!-- Error State -->
@@ -91,11 +87,12 @@
     </div>
 
     <!-- Table -->
-    <div *ngIf="!loading && !error" class="table-wrapper">
+    <div *ngIf="!error" class="table-wrapper">
       <table class="clients-table">
         <thead>
           <tr>
             <th>Customer</th>
+            <th>Booking Date</th>
             <th>Phone</th>
             <th>Email</th>
             <th>Address</th>
@@ -103,10 +100,38 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let client of filteredClients">
+          <!-- Skeleton Rows while loading -->
+          <ng-container *ngIf="loading">
+            <tr *ngFor="let s of [1, 2, 3, 4, 5]">
+              <td>
+                <span class="skeleton-line" style="width: 75%; height: 1rem; margin-bottom: 4px;"></span>
+                <span class="skeleton-line skeleton-line--sm" style="width: 45%;"></span>
+              </td>
+              <td>
+                <span class="skeleton-line" style="width: 65%; height: 0.9rem;"></span>
+              </td>
+              <td>
+                <span class="skeleton-line" style="width: 60%; height: 0.9rem;"></span>
+              </td>
+              <td>
+                <span class="skeleton-line" style="width: 70%; height: 0.9rem;"></span>
+              </td>
+              <td>
+                <span class="skeleton-line" style="width: 80%; height: 0.9rem;"></span>
+              </td>
+              <td class="col-actions">
+                <span class="skeleton-line" style="width: 60px; height: 1.75rem; border-radius: 0.375rem;"></span>
+              </td>
+            </tr>
+          </ng-container>
+
+          <tr *ngFor="let client of (loading ? [] : filteredClients)">
             <td>
               <div class="client-name">{{ client.name }}</div>
               <div class="client-id">{{ client.customerId }}</div>
+            </td>
+            <td class="booking-date-cell">
+              <span class="booking-date-badge">{{ client.bookingDate }}</span>
             </td>
             <td>{{ client.phone }}</td>
             <td>{{ client.email }}</td>
@@ -130,7 +155,7 @@
           </tr>
 
           <tr *ngIf="filteredClients.length === 0">
-            <td colspan="5" class="empty-state">No clients found.</td>
+            <td colspan="6" class="empty-state">No clients found.</td>
           </tr>
         </tbody>
       </table>
@@ -146,3 +171,12 @@
      (create)="onClientCreate($event)"
      (update)="onClientUpdate($event)"
    ></app-client-modal>
+
+   <app-import-excel-modal
+     [isOpen]="showImportModal"
+     [entityName]="'Clients'"
+     [columns]="clientImportColumns"
+     [sampleRows]="clientSampleRows"
+     (close)="showImportModal = false"
+     (fileImported)="onImportFile($event)"
+   ></app-import-excel-modal>
