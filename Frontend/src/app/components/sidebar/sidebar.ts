@@ -1,11 +1,12 @@
 import { Component, inject, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { Auth } from '../../services/auth';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterLinkActive],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',
 })
@@ -14,6 +15,11 @@ export class Sidebar {
   private router = inject(Router);
 
   isMobileOpen = false;
+  isCollapsed = false;
+
+  toggleCollapse() {
+    this.isCollapsed = !this.isCollapsed;
+  }
 
   closeMobileSidebar() {
     this.isMobileOpen = false;

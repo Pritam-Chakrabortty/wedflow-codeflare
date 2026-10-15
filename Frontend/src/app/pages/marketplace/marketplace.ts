@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WorkAssignmentModal, WorkRequest } from './work-assignment-modal/work-assignment-modal';
 import { WorkBriefModal } from './work-brief-modal/work-brief-modal';
-import { AddProfileModal } from './add-profile-modal/add-profile-modal';
 import { MarketplaceService, Professional } from '../../services/marketplace.service';
 
 type ServiceFilter =
@@ -24,7 +23,7 @@ type TypeFilter = 'all' | 'individual' | 'team';
 @Component({
   selector: 'app-marketplace',
   standalone: true,
-  imports: [CommonModule, FormsModule, WorkAssignmentModal, WorkBriefModal, AddProfileModal],
+  imports: [CommonModule, FormsModule, WorkAssignmentModal, WorkBriefModal],
   templateUrl: './marketplace.html',
   styleUrl: './marketplace.scss'
 })
@@ -44,8 +43,6 @@ export class Marketplace implements OnInit {
 
   showBriefModal = signal(false);
   selectedProfessionalForBrief = signal<Professional | null>(null);
-
-  showAddProfileModal = signal(false);
 
   isLoading = signal(false);
   error = signal<string | null>(null);
@@ -238,18 +235,6 @@ export class Marketplace implements OnInit {
 
   extraSkillsCount(p: Professional): number {
     return Math.max(0, p.skills.length - 3);
-  }
-
-  onOpenAddProfile() {
-    this.showAddProfileModal.set(true);
-  }
-
-  onAddProfileClose() {
-    this.showAddProfileModal.set(false);
-  }
-
-  onProfileAdded(newProf: Professional) {
-    this.professionals.update(list => [newProf, ...list]);
   }
 
   onSendWorkBrief(p: Professional) {

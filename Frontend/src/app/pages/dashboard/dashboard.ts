@@ -12,6 +12,8 @@ interface StatCard {
   link: string;
   highlighted?: boolean;
   valueColor: string;
+  trend?: 'up' | 'down' | 'neutral';
+  trendValue?: number;
 }
 
 interface DayEvent {
@@ -36,6 +38,7 @@ interface ActionItem {
   detail: string;
   link: string;
   urgent: boolean;
+  expanded?: boolean;
 }
 
 @Component({
@@ -50,9 +53,22 @@ export class Dashboard implements OnInit {
 
   isLoadingSummary = signal(true);
 
-  // ----- Attention banner -----
+  // ----- Attention banner & Notification popup -----
   bookingsNeedingCrew = signal(0);
   paymentsNeedingFollowUp = signal(0);
+  showNotificationDropdown = signal(false);
+
+  totalAttentionCount = computed(() => {
+    return (this.bookingsNeedingCrew() || 0) + (this.paymentsNeedingFollowUp() || 0);
+  });
+
+  toggleNotificationDropdown(): void {
+    this.showNotificationDropdown.update((val) => !val);
+  }
+
+  closeNotificationDropdown(): void {
+    this.showNotificationDropdown.set(false);
+  }
 
   // ----- Stat cards -----
   statCards = signal<StatCard[]>([
@@ -64,6 +80,8 @@ export class Dashboard implements OnInit {
       link: '/bookings',
       highlighted: true,
       valueColor: 'gold',
+      trend: 'up',
+      trendValue: 12,
     },
     {
       label: 'Active Bookings',
@@ -72,6 +90,8 @@ export class Dashboard implements OnInit {
       icon: 'calendar',
       link: '/bookings',
       valueColor: 'white',
+      trend: 'up',
+      trendValue: 8,
     },
     {
       label: 'Pending Payments',
@@ -80,6 +100,8 @@ export class Dashboard implements OnInit {
       icon: 'credit-card',
       link: '/bookings',
       valueColor: 'red',
+      trend: 'down',
+      trendValue: 5,
     },
     {
       label: 'Need Crew',
@@ -88,6 +110,8 @@ export class Dashboard implements OnInit {
       icon: 'users',
       link: '/crew-assignments',
       valueColor: 'gold',
+      trend: 'neutral',
+      trendValue: 0,
     },
   ]);
 
@@ -96,6 +120,8 @@ export class Dashboard implements OnInit {
   currentMonth = signal(new Date());
   selectedDate = signal(new Date());
   searchTerm = signal('');
+  statusFilter = signal<'all' | 'needs-crew' | 'crew-assigned'>('all');
+  crewStateFilter = signal<'all' | 'needs-crew' | 'assigned'>('all');
 
   monthLabel = computed(() => this.currentMonth().toLocaleString('en-US', { month: 'long' }));
   yearLabel = computed(() => this.currentMonth().getFullYear());
@@ -104,6 +130,27 @@ export class Dashboard implements OnInit {
   eventsByDate = signal<Record<string, DayEvent[]>>({});
   actionItems = signal<ActionItem[]>([]);
   upcomingEventsList = signal<any[]>([]);
+
+  // Event preview popover
+  hoveredEvent = signal<DayEvent | null>(null);
+  previewPosition = signal<{ top: string; left: string }>({ top: '0', left: '0' });
+
+  showEventPreview(event: DayEvent, mouseEvent: MouseEvent): void {
+    this.hoveredEvent.set(event);
+    const rect = (mouseEvent.target as HTMLElement).getBoundingClientRect();
+    this.previewPosition.set({
+      top: `${rect.bottom + 8}px`,
+      left: `${rect.left}px`
+    });
+  }
+
+  hideEventPreview(): void {
+    this.hoveredEvent.set(null);
+  }
+
+  toggleActionItem(item: ActionItem): void {
+    item.expanded = !item.expanded;
+  }
 
   ngOnInit(): void {
     this.loadDashboardSummary();
@@ -319,11 +366,15 @@ export class Dashboard implements OnInit {
 
   allMonthEvents = computed<DayEvent[]>(() => {
     const term = this.searchTerm().trim().toLowerCase();
+    const crewFilter = this.crewStateFilter();
     const map = this.eventsByDate();
     const list: DayEvent[] = [];
     Object.values(map).forEach(arr => {
       arr.forEach(item => {
-        if (!term || item.name.toLowerCase().includes(term) || item.location.toLowerCase().includes(term) || item.packageName.toLowerCase().includes(term)) {
+        const matchesTerm = !term || item.name.toLowerCase().includes(term) || item.location.toLowerCase().includes(term) || item.packageName.toLowerCase().includes(term);
+        const matchesCrew = crewFilter === 'all' || (crewFilter === 'needs-crew' ? item.needsCrew : !item.needsCrew);
+
+        if (matchesTerm && matchesCrew) {
           list.push(item);
         }
       });

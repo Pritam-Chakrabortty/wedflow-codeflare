@@ -35,13 +35,6 @@
             <div class="stat-label">Hired</div>
           </div>
         </div>
-        <button type="button" class="btn-add-profile" (click)="onOpenAddProfile()">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 12h14"></path>
-            <path d="M12 5v14"></path>
-          </svg>
-          Add Profile
-        </button>
       </div>
     </section>
 
@@ -61,10 +54,26 @@
       <!-- BROWSE PANEL -->
       <div *ngIf="activeTab() === 'browse'" class="tab-panel">
 
-        <!-- Loading State -->
-        <div *ngIf="isLoading()" class="loading-state">
-          <div class="loading-spinner"></div>
-          <p>Loading professionals...</p>
+        <!-- Loading Skeleton State -->
+        <div *ngIf="isLoading()" class="professionals-grid" style="margin-top: 1rem;">
+          <div class="professional-card" *ngFor="let s of [1, 2, 3, 4, 5, 6]">
+            <div class="card-top">
+              <div class="skeleton-box" style="width: 3rem; height: 3rem; border-radius: 9999px;"></div>
+              <div class="identity-block" style="width: 70%;">
+                <span class="skeleton-line" style="width: 70%; height: 1.1rem; margin-bottom: 6px;"></span>
+                <span class="skeleton-line skeleton-line--sm" style="width: 50%; margin-bottom: 4px;"></span>
+                <span class="skeleton-line skeleton-line--sm" style="width: 60%;"></span>
+              </div>
+            </div>
+            <div style="margin-top: 1rem;">
+              <span class="skeleton-line" style="width: 90%; height: 0.9rem; margin-bottom: 6px;"></span>
+              <span class="skeleton-line" style="width: 65%; height: 0.9rem;"></span>
+            </div>
+            <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+              <span class="skeleton-line" style="width: 60px; height: 1.5rem; border-radius: 9999px;"></span>
+              <span class="skeleton-line" style="width: 70px; height: 1.5rem; border-radius: 9999px;"></span>
+            </div>
+          </div>
         </div>
 
         <!-- Error State -->
@@ -342,10 +351,4 @@
     (closeModal)="onBriefModalClose()"
     (briefSubmitted)="onBriefSubmitted($event)"
   ></app-work-brief-modal>
-
-  <app-add-profile-modal
-    [isOpen]="showAddProfileModal()"
-    (closeModal)="onAddProfileClose()"
-    (profileAdded)="onProfileAdded($event)"
-  ></app-add-profile-modal>
 </main>

@@ -1383,6 +1383,412 @@ app.delete('/api/clients/:id', async (req, res) => {
   }
 });
 
+// ============================================
+// LEADS API
+// ============================================
+
+// GET /api/leads - List all leads in workspace
+app.get('/api/leads', async (req, res) => {
+  try {
+    const { status, priority, source } = req.query;
+    let query = `
+      SELECT l.*,
+             COALESCE(u.staff_name, NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), 'Unassigned') AS assigned_to_name
+      FROM leads l
+      LEFT JOIN users u ON u.id = l.assigned_to
+      WHERE l.workspace_id = $1
+    `;
+    const params = [req.user.workspace_id];
+    let paramCount = 1;
+
+    if (status) {
+      paramCount++;
+      query += ` AND l.status = $${paramCount}`;
+      params.push(status);
+    }
+
+    if (priority) {
+      paramCount++;
+      query += ` AND l.priority = $${paramCount}`;
+      params.push(priority);
+    }
+
+    if (source) {
+      paramCount++;
+      query += ` AND l.source = $${paramCount}`;
+      params.push(source);
+    }
+
+    query += ` ORDER BY l.created_at DESC`;
+
+    const result = await pool.query(query, params);
+    return res.json({ success: true, leads: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching leads:', error);
+    return res.status(500).json({ error: 'Failed to fetch leads' });
+  }
+});
+
+// POST /api/leads - Create new lead
+app.post('/api/leads', async (req, res) => {
+  const { name, phone, email, event_date, event_type, venue, estimated_budget, source, status, priority, notes, assigned_to } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'Lead name is required' });
+  }
+
+  try {
+    if (assigned_to) {
+      const userCheck = await pool.query(
+        `SELECT id FROM users WHERE id = $1 AND workspace_id = $2`,
+        [assigned_to, req.user.workspace_id]
+      );
+      if (userCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Assigned user not found in this workspace' });
+      }
+    }
+
+    const result = await pool.query(
+      `INSERT INTO leads (workspace_id, name, phone, email, event_date, event_type, venue, estimated_budget, source, status, priority, notes, assigned_to)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       RETURNING *`,
+      [req.user.workspace_id, String(name).trim(), phone?.trim() || null, email?.trim() || null, event_date || null, event_type?.trim() || null, venue?.trim() || null, estimated_budget !== undefined ? Number(estimated_budget) : null, source || 'direct', status || 'new', priority || 'medium', notes?.trim() || null, assigned_to || null]
+    );
+
+    const insertedLead = result.rows[0];
+    const fullLead = await pool.query(
+      `SELECT l.*,
+              COALESCE(u.staff_name, NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), 'Unassigned') AS assigned_to_name
+       FROM leads l
+       LEFT JOIN users u ON u.id = l.assigned_to
+       WHERE l.id = $1`,
+      [insertedLead.id]
+    );
+
+    return res.status(201).json({ success: true, lead: fullLead.rows[0] });
+  } catch (error) {
+    console.error('Error creating lead:', error);
+    return res.status(500).json({ error: 'Failed to create lead' });
+  }
+});
+
+// GET /api/leads/:id - Get specific lead
+app.get('/api/leads/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT l.*,
+              COALESCE(u.staff_name, NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), 'Unassigned') AS assigned_to_name,
+              c.name AS converted_client_name
+       FROM leads l
+       LEFT JOIN users u ON u.id = l.assigned_to
+       LEFT JOIN client c ON c.id = l.converted_to_client_id
+       WHERE l.id = $1 AND l.workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+
+    return res.json({ success: true, lead: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching lead:', error);
+    return res.status(500).json({ error: 'Failed to fetch lead' });
+  }
+});
+
+// PUT /api/leads/:id - Update lead
+app.put('/api/leads/:id', async (req, res) => {
+  const { name, phone, email, event_date, event_type, venue, estimated_budget, source, status, priority, notes, assigned_to, converted_to_client_id } = req.body;
+
+  try {
+    if (assigned_to) {
+      const userCheck = await pool.query(
+        `SELECT id FROM users WHERE id = $1 AND workspace_id = $2`,
+        [assigned_to, req.user.workspace_id]
+      );
+      if (userCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Assigned user not found in this workspace' });
+      }
+    }
+
+    if (converted_to_client_id) {
+      const clientCheck = await pool.query(
+        `SELECT id FROM client WHERE id = $1 AND workspace_id = $2`,
+        [converted_to_client_id, req.user.workspace_id]
+      );
+      if (clientCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Client not found in this workspace' });
+      }
+    }
+
+    const result = await pool.query(
+      `UPDATE leads
+       SET name = COALESCE($1, name),
+           phone = $2,
+           email = $3,
+           event_date = $4,
+           event_type = $5,
+           venue = $6,
+           estimated_budget = $7,
+           source = COALESCE($8, source),
+           status = COALESCE($9, status),
+           priority = COALESCE($10, priority),
+           notes = $11,
+           assigned_to = $12,
+           converted_to_client_id = $13,
+           converted_at = CASE WHEN $13 IS NOT NULL AND converted_to_client_id IS NULL THEN NOW() ELSE converted_at END,
+           updated_at = NOW()
+       WHERE id = $14 AND workspace_id = $15
+       RETURNING *`,
+      [name?.trim() || null, phone?.trim() || null, email?.trim() || null, event_date || null, event_type?.trim() || null, venue?.trim() || null, estimated_budget !== undefined ? Number(estimated_budget) : null, source || null, status || null, priority || null, notes?.trim() || null, assigned_to || null, converted_to_client_id || null, req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+
+    const fullLead = await pool.query(
+      `SELECT l.*,
+              COALESCE(u.staff_name, NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), 'Unassigned') AS assigned_to_name
+       FROM leads l
+       LEFT JOIN users u ON u.id = l.assigned_to
+       WHERE l.id = $1`,
+      [req.params.id]
+    );
+
+    return res.json({ success: true, lead: fullLead.rows[0] });
+  } catch (error) {
+    console.error('Error updating lead:', error);
+    return res.status(500).json({ error: 'Failed to update lead' });
+  }
+});
+
+// DELETE /api/leads/:id - Delete lead
+app.delete('/api/leads/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `DELETE FROM leads WHERE id = $1 AND workspace_id = $2 RETURNING *`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+
+    return res.json({ success: true, message: 'Lead deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting lead:', error);
+    return res.status(500).json({ error: 'Failed to delete lead' });
+  }
+});
+
+// GET /api/leads/:id/activities - Get lead activities
+app.get('/api/leads/:id/activities', async (req, res) => {
+  try {
+    const leadCheck = await pool.query(
+      `SELECT id FROM leads WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (leadCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+
+    const result = await pool.query(
+      `SELECT la.*,
+              COALESCE(u.staff_name, NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), 'System') AS created_by_name
+       FROM lead_activities la
+       LEFT JOIN users u ON u.id = la.created_by
+       WHERE la.lead_id = $1
+       ORDER BY la.created_at DESC`,
+      [req.params.id]
+    );
+
+    return res.json({ success: true, activities: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('Error fetching lead activities:', error);
+    return res.status(500).json({ error: 'Failed to fetch lead activities' });
+  }
+});
+
+// POST /api/leads/:id/activities - Add lead activity
+app.post('/api/leads/:id/activities', async (req, res) => {
+  const { activity_type, description, outcome, next_follow_up_date } = req.body;
+
+  if (!activity_type) {
+    return res.status(400).json({ error: 'Activity type is required' });
+  }
+
+  try {
+    const leadCheck = await pool.query(
+      `SELECT id FROM leads WHERE id = $1 AND workspace_id = $2`,
+      [req.params.id, req.user.workspace_id]
+    );
+
+    if (leadCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO lead_activities (lead_id, activity_type, description, outcome, next_follow_up_date, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [req.params.id, activity_type, description?.trim() || null, outcome?.trim() || null, next_follow_up_date || null, req.user.userId]
+    );
+
+    return res.status(201).json({ success: true, activity: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating lead activity:', error);
+    return res.status(500).json({ error: 'Failed to create lead activity' });
+  }
+});
+
+// POST /api/leads/:id/convert - Convert a lead into a Client and Booking
+app.post('/api/leads/:id/convert', async (req, res) => {
+  const leadId = req.params.id;
+  const workspaceId = req.user.workspace_id;
+
+  try {
+    // 1. Fetch Lead
+    const leadResult = await pool.query(
+      `SELECT * FROM leads WHERE id = $1 AND workspace_id = $2`,
+      [leadId, workspaceId]
+    );
+
+    if (leadResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+
+    const lead = leadResult.rows[0];
+
+    // Check if already converted
+    if (lead.converted_to_client_id) {
+      return res.status(400).json({ error: 'Lead has already been converted to a client' });
+    }
+
+    // 2. Create Client
+    const clientResult = await pool.query(
+      `INSERT INTO client (workspace_id, name, phone, email, notes, status)
+       VALUES ($1, $2, $3, $4, $5, 'active')
+       RETURNING *`,
+      [
+        workspaceId,
+        lead.name.trim(),
+        lead.phone?.trim() || null,
+        lead.email?.trim() || null,
+        `Converted from Lead ID: DRVSTU-LED-${lead.id.slice(0, 8).toUpperCase()}`
+      ]
+    );
+    const client = clientResult.rows[0];
+
+    // 3. Find or Create Package
+    let packageId = (await pool.query(
+      `SELECT id FROM packages WHERE workspace_id = $1 ORDER BY created_at ASC LIMIT 1`,
+      [workspaceId]
+    )).rows[0]?.id;
+
+    if (!packageId) {
+      const pkgResult = await pool.query(
+        `INSERT INTO packages (workspace_id, name, total_price)
+         VALUES ($1, 'Custom Wedding Package', $2)
+         RETURNING id`,
+        [workspaceId, lead.estimated_budget || 0]
+      );
+      packageId = pkgResult.rows[0].id;
+    }
+
+    // 4. Generate Booking Number
+    const bkgNumResult = await pool.query(
+      `SELECT 'DRVSTU-BKG-' || LPAD((COUNT(*) + 1)::text, 6, '0') AS booking_number
+       FROM bookings WHERE workspace_id = $1`,
+      [workspaceId]
+    );
+    const bookingNumber = bkgNumResult.rows[0].booking_number;
+
+    // 5. Create Booking
+    const bookingResult = await pool.query(
+      `INSERT INTO bookings (workspace_id, client_id, package_id, booking_number, booking_date, total_amount, status, current_workflow_stage, notes)
+       VALUES ($1, $2, $3, $4, CURRENT_DATE, $5, 'confirmed', 'booking', $6)
+       RETURNING *`,
+      [
+        workspaceId,
+        client.id,
+        packageId,
+        bookingNumber,
+        lead.estimated_budget || 0,
+        lead.notes || `Converted from Lead ${lead.name}`
+      ]
+    );
+    const booking = bookingResult.rows[0];
+
+    // 6. Create Booking Event if date/venue/eventType exists
+    if (lead.event_date || lead.venue || lead.event_type) {
+      let eventTypeId = (await pool.query(
+        `SELECT id FROM event_type WHERE workspace_id = $1 LIMIT 1`,
+        [workspaceId]
+      )).rows[0]?.id;
+
+      if (!eventTypeId) {
+        const etResult = await pool.query(
+          `INSERT INTO event_type (workspace_id, name) VALUES ($1, 'Wedding') RETURNING id`,
+          [workspaceId]
+        );
+        eventTypeId = etResult.rows[0].id;
+      }
+
+      await pool.query(
+        `INSERT INTO booking_events (workspace_id, booking_id, event_type_id, event_name, event_date, venue, notes)
+         VALUES ($1, $2, $3, $4, $5::date, $6, $7)`,
+        [
+          workspaceId,
+          booking.id,
+          eventTypeId,
+          lead.event_type || 'Wedding Event',
+          lead.event_date || '2099-12-31',
+          lead.venue || null,
+          lead.notes || null
+        ]
+      );
+    }
+
+    // 7. Update Lead
+    const updatedLeadResult = await pool.query(
+      `UPDATE leads
+       SET status = 'won',
+           converted_to_client_id = $1,
+           converted_at = NOW(),
+           updated_at = NOW()
+       WHERE id = $2 AND workspace_id = $3
+       RETURNING *`,
+      [client.id, leadId, workspaceId]
+    );
+
+    // Fetch full lead with assigned_to_name & converted_client_name
+    const fullLeadResult = await pool.query(
+      `SELECT l.*,
+              COALESCE(u.staff_name, NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), 'Unassigned') AS assigned_to_name,
+              c.name AS converted_client_name
+       FROM leads l
+       LEFT JOIN users u ON u.id = l.assigned_to
+       LEFT JOIN client c ON c.id = l.converted_to_client_id
+       WHERE l.id = $1 AND l.workspace_id = $2`,
+      [leadId, workspaceId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully converted lead ${lead.name} to Client & Booking (${bookingNumber})`,
+      client,
+      booking,
+      lead: fullLeadResult.rows[0]
+    });
+  } catch (error) {
+    console.error('Error converting lead to client & booking:', error);
+    return res.status(500).json({ error: 'Failed to convert lead to client & booking' });
+  }
+});
+
 // GET /api/packages - List packages in the authenticated user's workspace
 app.get('/api/packages', async (req, res) => {
   try {

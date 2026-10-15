@@ -175,8 +175,10 @@
                         </ul>
                     </div>
 
-                    <button type="button" class="choose-file-btn" [disabled]="isChooseFileDisabled()"
-                        (click)="onChooseFile(fileInput)"> <svg xmlns="http://www.w3.org/2000/svg" width="24"
+                    <button type="button" class="choose-file-btn"
+                        [disabled]="isUploading()"
+                        (click)="onChooseFile(fileInput)">
+                        <svg *ngIf="!isUploading()" xmlns="http://www.w3.org/2000/svg" width="24"
                             height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M14 2v4a2 2 0 0 0 2 2h4"></path>
@@ -184,7 +186,8 @@
                             <path d="M12 12v6"></path>
                             <path d="m15 15-3-3-3 3"></path>
                         </svg>
-                        Choose file
+                        <span *ngIf="isUploading()" class="spinner-icon"></span>
+                        {{ isUploading() ? 'Uploading...' : 'Choose file' }}
                     </button>
                     <input #fileInput type="file" class="hidden-file-input" (change)="onFileSelected($event)" />
                 </div>
