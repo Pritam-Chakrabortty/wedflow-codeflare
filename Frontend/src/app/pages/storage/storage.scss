@@ -175,7 +175,6 @@
   display: none;
 }
 
-// bg-primary text-primary-foreground, matches marketplace's reset/brief-btn pattern
 .choose-file-btn {
   display: inline-flex;
   align-items: center;
@@ -191,14 +190,42 @@
   cursor: pointer;
   white-space: nowrap;
   padding: 0 16px;
+  transition: all 0.2s ease;
 
   svg {
     height: 16px;
     width: 16px;
   }
 
-  &:hover {
+  &:hover:not(:disabled):not(&--disabled) {
     filter: brightness(1.05);
+    transform: translateY(-1px);
+  }
+
+  &--disabled {
+    opacity: 0.65;
+    cursor: pointer; // Still clickable so clicking alerts the user to select a booking
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.spinner-icon {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

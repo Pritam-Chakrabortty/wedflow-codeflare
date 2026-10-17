@@ -1,0 +1,100 @@
+<div class="dialog-overlay" *ngIf="isOpen" (click)="onClose()"></div>
+
+<div class="dialog-content" role="dialog" *ngIf="isOpen" tabindex="-1">
+  <div class="dialog-header">
+    <div class="dialog-title-group">
+      <h2 class="dialog-title">Import {{ entityName }}</h2>
+      <p class="dialog-subtitle">Upload spreadsheet data or download the official template.</p>
+    </div>
+    <button type="button" class="dialog-close" (click)="onClose()" aria-label="Close dialog">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  </div>
+
+  <div class="dialog-body">
+    <!-- Step 1: Download Template -->
+    <div class="step-card">
+      <div class="step-badge">Step 1</div>
+      <div class="step-content">
+        <h3 class="step-title">Download Sample Template</h3>
+        <p class="step-desc">
+          Get the standard spreadsheet template with required columns pre-formatted for {{ entityName | lowercase }}.
+        </p>
+        <button type="button" class="btn-template" (click)="downloadTemplate()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download {{ entityName }} Template (.csv)
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Upload File -->
+    <div class="step-card">
+      <div class="step-badge">Step 2</div>
+      <div class="step-content">
+        <h3 class="step-title">Upload Completed File</h3>
+        <p class="step-desc">Supported formats: <strong>.csv, .xlsx, .xls</strong></p>
+
+        <div class="upload-dropzone" [class.has-file]="!!selectedFile" (click)="fileInput.click()"
+             (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+          <input #fileInput type="file" accept=".csv,.xlsx,.xls" class="hidden-input" (change)="onFileSelected($event)">
+          
+          <div *ngIf="!selectedFile" class="dropzone-empty">
+            <svg class="dropzone-icon" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <div class="dropzone-prompt">
+              <strong>Click to upload</strong> or drag and drop
+            </div>
+            <span class="dropzone-hint">Excel or CSV file up to 10MB</span>
+          </div>
+
+          <div *ngIf="selectedFile" class="dropzone-selected">
+            <div class="file-icon-box">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+            </div>
+            <div class="file-details">
+              <span class="file-name">{{ selectedFile.name }}</span>
+              <span class="file-size">{{ formatFileSize(selectedFile.size) }}</span>
+            </div>
+            <button type="button" class="btn-remove-file" (click)="removeSelectedFile($event)" title="Remove file">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="errorMessage" class="error-msg">
+          {{ errorMessage }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-footer">
+    <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
+    <button type="button" class="btn-primary" [disabled]="!selectedFile || isProcessing" (click)="onImportSubmit()">
+      <span *ngIf="!isProcessing">Import File</span>
+      <span *ngIf="isProcessing">Processing...</span>
+    </button>
+  </div>
+</div>
+

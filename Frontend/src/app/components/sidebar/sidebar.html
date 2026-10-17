@@ -1,12 +1,27 @@
 <!-- Desktop Sidebar -->
-<aside class="sidebar sidebar--desktop">
+<aside class="sidebar sidebar--desktop" [class.collapsed]="isCollapsed">
     <div class="sidebar-inner">
         <div class="sidebar-header">
-            <img class="brand-logo" alt="Company Logo" src="/assests/images/drv.jpg" />
-            <div class="brand-info">
-                <div class="brand-name">DRV Studios</div>
-                <div class="brand-tagline">Wedding Photography</div>
+            <div class="brand-brand-wrap">
+                <img class="brand-logo" alt="Company Logo" src="/assests/images/drv.jpg" />
+                <div class="brand-info" *ngIf="!isCollapsed">
+                    <div class="brand-name">DRV Studios</div>
+                    <div class="brand-tagline">Wedding Photography</div>
+                </div>
             </div>
+            <button
+                type="button"
+                class="sidebar-toggle-btn"
+                (click)="toggleCollapse()"
+                [title]="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+                [attr.aria-label]="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="toggle-icon" [class.rotated]="isCollapsed">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
         </div>
 
         <nav class="sidebar-nav">
@@ -172,8 +187,8 @@
 
         <div class="sidebar-footer">
             <div class="user-block">
-                <div class="user-avatar">{{ userInitial() }}</div>
-                <div class="user-info">
+                <div class="user-avatar" [title]="userName() + ' (' + userRole() + ')'">{{ userInitial() }}</div>
+                <div class="user-info" *ngIf="!isCollapsed">
                     <div class="user-name">{{ userName() }}</div>
                     <div class="user-role">{{ userRole() }}</div>
                 </div>
