@@ -132,22 +132,6 @@ export class Dashboard implements OnInit {
   actionItems = signal<ActionItem[]>([]);
   upcomingEventsList = signal<any[]>([]);
 
-  // Event preview popover
-  hoveredEvent = signal<DayEvent | null>(null);
-  previewPosition = signal<{ top: string; left: string }>({ top: '0', left: '0' });
-
-  showEventPreview(event: DayEvent, mouseEvent: MouseEvent): void {
-    this.hoveredEvent.set(event);
-    const rect = (mouseEvent.target as HTMLElement).getBoundingClientRect();
-    this.previewPosition.set({
-      top: `${rect.bottom + 8}px`,
-      left: `${rect.left}px`
-    });
-  }
-
-  hideEventPreview(): void {
-    this.hoveredEvent.set(null);
-  }
 
   toggleActionItem(item: ActionItem): void {
     item.expanded = !item.expanded;
