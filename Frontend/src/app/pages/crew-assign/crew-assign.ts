@@ -83,6 +83,7 @@ export class CrewAssign implements OnInit {
   showAssignModal = false;
   selectedStage: EventStage | null = null;
   selectedRole: RoleAssignment | null = null;
+  memberToReassign: CrewMember | null = null;
   availableStaffForRole: StaffWithAvailability[] = [];
 
   constructor(
@@ -584,33 +585,53 @@ export class CrewAssign implements OnInit {
   }
 
   onAssignRole(stage: EventStage, role: RoleAssignment): void {
+    this.memberToReassign = null;
     this.selectedStage = stage;
     this.selectedRole = role;
     this.calculateStaffAvailability(stage, role);
     this.showAssignModal = true;
   }
 
-  calculateStaffAvailability(stage: EventStage, role: RoleAssignment): void {
+  onEditCrew(stage: EventStage, role: RoleAssignment, member: CrewMember): void {
+    this.memberToReassign = member;
+    this.selectedStage = stage;
+    this.selectedRole = role;
+    this.calculateStaffAvailability(stage, role, member);
+    this.showAssignModal = true;
+  }
+
+  normalizeRoleName(role: string | null | undefined): string {
+    if (!role) return '';
+    return role.toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  isRoleMatching(staffRole: string | null | undefined, targetRole: string | null | undefined): boolean {
+    const sRole = this.normalizeRoleName(staffRole);
+    const tRole = this.normalizeRoleName(targetRole);
+    if (!sRole || !tRole) return false;
+    return sRole === tRole || sRole.includes(tRole) || tRole.includes(sRole);
+  }
+
+  calculateStaffAvailability(stage: EventStage, role: RoleAssignment, currentMember?: CrewMember): void {
     const stageDateStr = this.normalizeDate(stage.rawDate);
 
-    const staffWithAvailability: StaffWithAvailability[] = this.allStaff.map(staff => {
+    // Only include staff members whose role matches the target role
+    const matchingStaff = this.allStaff.filter(staff => this.isRoleMatching(staff.role, role.role));
+
+    const staffWithAvailability: StaffWithAvailability[] = matchingStaff.map(staff => {
       const staffAssignments = this.crewAssignments.filter(ca => 
         ca.staff_id === staff.id && 
         this.normalizeDate(ca.event_date) === stageDateStr
       );
 
-      const staffRole = (staff.role || '').toLowerCase();
-      const reqRole = role.role.toLowerCase();
-      const isRoleMatch = staffRole === reqRole ||
-                          staffRole.includes(reqRole) ||
-                          reqRole.includes(staffRole);
-
-      const isAvailable = isRoleMatch && staffAssignments.length === 0;
+      // If reassigning, the currently assigned member can remain selectable, or other staff with 0 assignments on that date
+      const isCurrentEditingMember = currentMember && staff.id === currentMember.id;
+      const isAvailable = staffAssignments.length === 0 || !!isCurrentEditingMember;
 
       return {
         ...staff,
         isAvailable,
-        isRoleMatch,
+        isRoleMatch: true,
         existingAssignments: staffAssignments.length,
         conflictingDates: staffAssignments.map(ca => ca.event_date)
       };
@@ -627,6 +648,7 @@ export class CrewAssign implements OnInit {
     this.showAssignModal = false;
     this.selectedStage = null;
     this.selectedRole = null;
+    this.memberToReassign = null;
     this.availableStaffForRole = [];
   }
 
@@ -668,6 +690,46 @@ export class CrewAssign implements OnInit {
         if (!eventDay) {
           console.error('Event day not found for stage:', stage);
           this.error = `Could not find event details for "${stage.name}" on ${stage.date}`;
+          return;
+        }
+
+        const existingAssignment = this.memberToReassign
+          ? this.crewAssignments.find(ca => {
+              if (ca.staff_id !== this.memberToReassign!.id) return false;
+              if (ca.assigned_role.toLowerCase() !== this.selectedRole!.role.toLowerCase()) return false;
+              if (ca.booking_event_id && stage.booking_event_id) {
+                return ca.booking_event_id === stage.booking_event_id;
+              }
+              const isDateMatch = this.normalizeDate(ca.event_date) === this.normalizeDate(stage.rawDate);
+              const isNameMatch = ca.event_name?.toLowerCase() === stage.name.toLowerCase();
+              return isDateMatch && isNameMatch;
+            })
+          : null;
+
+        if (existingAssignment) {
+          // If the user selected the same person, just close the modal
+          if (existingAssignment.staff_id === staff.id) {
+            this.closeAssignModal();
+            return;
+          }
+
+          // Update assignment to new staff member
+          this.crewAssignmentService.updateCrewAssignment(existingAssignment.id, {
+            staff_id: staff.id,
+            booking_event_id: eventDay.id,
+            assigned_role: this.selectedRole!.role,
+            assignment_date: eventDay.event_date || stage.rawDate,
+            status: 'confirmed'
+          }).subscribe({
+            next: () => {
+              this.closeAssignModal();
+              this.loadCrewAssignments();
+            },
+            error: (err) => {
+              console.error('Error updating crew assignment:', err);
+              this.error = `Failed to update crew assignment: ${err.message || err.status || 'Unknown error'}`;
+            }
+          });
           return;
         }
 
