@@ -116,78 +116,123 @@
 
         <div class="detail-header">
           <div class="detail-header-top">
-            <div>
-              <div class="detail-name">{{ selectedBooking.clientName }}</div>
+            <div class="detail-title-group">
+              <div class="detail-name-row">
+                <div class="detail-name">{{ selectedBooking.clientName }}</div>
+              </div>
               <div class="detail-meta">
-                {{ selectedBooking.packageName }} · {{ selectedBooking.date }} · {{ selectedBooking.venue }}
+                <span class="meta-package">{{ selectedBooking.packageName }}</span>
+                <span class="meta-dot">·</span>
+                <span class="meta-date">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  {{ selectedBooking.date }}
+                </span>
+                <span class="meta-dot">·</span>
+                <span class="meta-venue">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                  {{ selectedBooking.venue }}
+                </span>
               </div>
             </div>
-            <span class="pending-badge" *ngIf="selectedBooking.pendingCount > 0">{{ selectedBooking.pendingCount }} pending</span>
-            <span class="plan-needed-badge" *ngIf="selectedBooking.pendingCount === 0 && (selectedBooking.stages.length === 0 || hasUnconfiguredPlan(selectedBooking))">Plan needed</span>
-            <span class="tag tag--outline" *ngIf="selectedBooking.pendingCount === 0 && selectedBooking.stages.length > 0 && !hasUnconfiguredPlan(selectedBooking)">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-              Crew complete
-            </span>
+            
+            <div class="detail-header-badges">
+              <span class="pending-badge pending-badge--prominent" *ngIf="selectedBooking.pendingCount > 0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {{ selectedBooking.pendingCount }} pending
+              </span>
+              <span class="plan-needed-badge" *ngIf="selectedBooking.pendingCount === 0 && (selectedBooking.stages.length === 0 || hasUnconfiguredPlan(selectedBooking))">Plan needed</span>
+              <span class="tag tag--complete" *ngIf="selectedBooking.pendingCount === 0 && selectedBooking.stages.length > 0 && !hasUnconfiguredPlan(selectedBooking)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                Crew complete
+              </span>
+            </div>
           </div>
 
-          <div class="progress-track">
-            <div class="progress-fill" [style.width.%]="overallProgressPercent(selectedBooking)"></div>
+          <div class="progress-section">
+            <div class="progress-info">
+              <span class="progress-label">Crew Fulfillment</span>
+              <span class="progress-percentage">{{ overallProgressPercent(selectedBooking) }}%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="overallProgressPercent(selectedBooking)"></div>
+            </div>
           </div>
         </div>
 
         <div class="stage-list" *ngIf="selectedBooking.stages.length > 0">
-          <div class="stage-card" *ngFor="let item of selectedRoleCards">
+          <div class="stage-card" *ngFor="let item of selectedRoleCards" [class.stage-card--pending]="item.pending > 0" [class.stage-card--complete]="item.pending <= 0">
             <div class="stage-top">
               <div>
                 <div class="stage-title-row">
                   <span class="stage-title">{{ item.stage.name }}</span>
-                  <span class="tag tag--muted" *ngIf="item.pending <= 0">Done</span>
-                  <span class="tag tag--outline" *ngIf="item.pending > 0">{{ item.pending }} pending</span>
-                  <span class="tag tag--danger" *ngIf="item.stage.overdue">Overdue</span>
+                  <span class="tag tag--muted tag--status" *ngIf="item.pending <= 0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    Done
+                  </span>
+                  <span class="tag tag--pending tag--status" *ngIf="item.pending > 0">{{ item.pending }} pending</span>
+                  <span class="tag tag--danger tag--status" *ngIf="item.stage.overdue">Overdue</span>
                 </div>
                 <div class="stage-meta">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   {{ item.stage.date }}
-                  <span>·</span>
+                  <span class="meta-dot">·</span>
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
                   {{ item.stage.venue }}
                 </div>
               </div>
 
               <button class="filled-btn" *ngIf="item.pending <= 0" disabled>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
                 Filled
               </button>
               <button class="assign-top-btn" *ngIf="item.pending > 0" (click)="onAssignRole(item.stage, item.role)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                 Assign {{ item.role.role }}
               </button>
             </div>
 
             <div class="role-row">
-              <div class="role-label-box">
+              <div class="role-label-box" [class.role-label-box--pending]="item.pending > 0" [class.role-label-box--complete]="item.pending <= 0">
                 <div class="role-name">{{ item.role.role }}</div>
-                <div class="role-count">{{ item.role.assigned.length }}/{{ item.role.required }} assigned</div>
+                <div class="role-count">
+                  <span class="role-count-num">{{ item.role.assigned.length }}/{{ item.role.required }}</span> assigned
+                </div>
+                <div class="role-mini-progress">
+                  <div class="role-mini-fill" [style.width.%]="(item.role.assigned.length / item.role.required) * 100"></div>
+                </div>
               </div>
 
               <div class="role-crew-col">
                 <ng-container *ngIf="item.role.assigned.length > 0; else noneAssigned">
                   <div class="crew-row" *ngFor="let member of item.role.assigned">
-                    <div>
-                      <div class="crew-name">{{ member.name }}</div>
-                      <div class="crew-shift">{{ member.shift }}</div>
+                    <div class="crew-info-box">
+                      <div>
+                        <div class="crew-name">{{ member.name }}</div>
+                        <div class="crew-shift">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          {{ member.shift }}
+                        </div>
+                      </div>
                     </div>
-                    <button class="remove-btn" (click)="onRemoveCrew(item.stage, item.role, member)">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    </button>
+                    <div class="crew-actions">
+                      <button class="edit-btn" title="Change crew assignment" (click)="onEditCrew(item.stage, item.role, member)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                      </button>
+                      <button class="remove-btn" title="Remove crew assignment" (click)="onRemoveCrew(item.stage, item.role, member)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      </button>
+                    </div>
                   </div>
                 </ng-container>
                 <ng-template #noneAssigned>
-                  <div class="empty-role-box">No one assigned yet.</div>
+                  <div class="empty-role-box" (click)="onAssignRole(item.stage, item.role)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                    <span>No one assigned yet. Click to assign {{ item.role.role }}</span>
+                  </div>
                 </ng-template>
               </div>
             </div>
-        </div>
+          </div>
 
         <div class="empty-state" *ngIf="selectedBooking.stages.length === 0 || selectedRoleCards.length === 0" style="padding: 3rem 1.5rem; text-align: center;">
           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 0.75rem; color: #94a3b8;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -203,7 +248,7 @@
   <div class="modal-overlay" *ngIf="showAssignModal" (click)="closeAssignModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Assign {{ selectedRole?.role }}</h2>
+        <h2>{{ memberToReassign ? 'Reassign ' + selectedRole?.role : 'Assign ' + selectedRole?.role }}</h2>
         <button class="modal-close" (click)="closeAssignModal()">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
@@ -237,29 +282,29 @@
                [class.staff-item--unavailable]="!staff.isAvailable"
                (click)="staff.isAvailable && assignStaffToRole(staff)">
             
-            <div class="staff-avatar">
-              <span>{{ (staff.staff_name || staff.name).charAt(0).toUpperCase() }}</span>
-            </div>
-            
             <div class="staff-details">
               <div class="staff-name">{{ staff.staff_name || staff.name }}</div>
               <div class="staff-role">{{ staff.role }}</div>
             </div>
 
             <div class="staff-status">
-              <span class="status-indicator" [class.status--available]="staff.isAvailable" [class.status--unavailable]="!staff.isAvailable">
-                {{ staff.isAvailable ? 'Available' : (staff.isRoleMatch === false ? 'Role Mismatch' : 'Unavailable') }}
-              </span>
-              <div class="conflict-info" *ngIf="!staff.isAvailable">
-                <span *ngIf="staff.existingAssignments > 0">{{ staff.existingAssignments }} existing assignment(s)</span>
-                <span *ngIf="staff.isRoleMatch === false && staff.existingAssignments === 0">Role: {{ staff.role }}</span>
-              </div>
-            </div>
+  <span class="staff-badge"
+        [class.staff-badge--available]="staff.isAvailable && (!memberToReassign || (staff.staff_name || staff.name) !== memberToReassign.name)"
+        [class.staff-badge--current]="memberToReassign && (staff.staff_name || staff.name) === memberToReassign.name"
+        [class.staff-badge--unavailable]="!staff.isAvailable">
+    {{ memberToReassign && (staff.staff_name || staff.name) === memberToReassign.name ? 'Currently Assigned' : (staff.isAvailable ? 'Available' : 'Already Booked') }}
+  </span>
+  <div class="conflict-info" *ngIf="!staff.isAvailable">
+    <span *ngIf="staff.existingAssignments > 0">{{ staff.existingAssignments }} assignment(s) on this date</span>
+  </div>
+</div>
 
-            <button class="assign-btn" [disabled]="!staff.isAvailable">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-              Assign
-            </button>
+            <div class="staff-action">
+              <button class="assign-btn" [disabled]="!staff.isAvailable">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                <span>{{ memberToReassign ? 'Reassign' : 'Assign' }}</span>
+              </button>
+            </div>
           </div>
 
           <div class="no-staff-message" *ngIf="availableStaffForRole.length === 0">
