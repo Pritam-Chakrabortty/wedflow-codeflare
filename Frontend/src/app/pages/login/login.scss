@@ -364,6 +364,15 @@ input[type='email'] {
   justify-content: center;
 }
 
+// ---------- Inline error message ----------
+.form-error {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: #ff6b6b;
+  text-align: center;
+}
+
 // h-12 w-full rounded-md font-bold
 button[type='submit'] {
   display: inline-flex;

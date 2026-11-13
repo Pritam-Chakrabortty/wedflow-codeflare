@@ -1,5 +1,4 @@
-import { CanActivateFn, Router, Routes } from '@angular/router';
-import { inject } from '@angular/core';
+import { Routes } from '@angular/router';
 import { LandingPage } from './pages/landing-page/landing-page';
 import { Login } from './pages/login/login';
 import { VerifyOtp } from './pages/verify-otp/verify-otp';
@@ -10,7 +9,6 @@ import { DashboardShell } from './pages/dashboard-shell/dashboard-shell';
 import { Packages } from './pages/packages/packages';
 import { Clients } from './pages/clients/clients';
 import { UserManagement } from './pages/user-management/user-management';
-import { Auth } from './services/auth';
 import { Bookings } from './pages/bookings/bookings';
 import { BookingDetail } from './pages/bookings/booking-detail/booking-detail';
 import { CrewAssign } from './pages/crew-assign/crew-assign';
@@ -20,17 +18,6 @@ import { Equipment } from './pages/equipment-page/equipment-page';
 import { WorkflowBoard } from './pages/workflow-board/workflow-board';
 import { Production } from './pages/production/production';
 import { Settings } from './pages/settings/settings';
-
-const authGuard: CanActivateFn = () => {
-  const auth = inject(Auth);
-  const router = inject(Router);
-
-  if (auth.isAuthenticated()) {
-    return true;
-  }
-
-  return router.createUrlTree(['/login']);
-};
 
 export const routes: Routes = [
   {
@@ -57,7 +44,6 @@ export const routes: Routes = [
   {
     path: '',
     component: DashboardShell,
-    canActivate: [authGuard],
     children: [
       { path: 'dashboard', component: Dashboard },
       { path: 'packages', component: Packages },

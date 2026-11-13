@@ -832,7 +832,7 @@ openSlots(role: RoleAssignment): number[] {
     this.isLoading = true;
     this.error = null;
 
-    this.http.get('https://wedflow-codeflare.onrender.com/api/bookings').subscribe({
+    this.http.get('https://wedflowcodeflare-2.onrender.com/api/bookings').subscribe({
       next: (response) => {
         this.error = 'Bookings API working. Check console for details.';
         this.isLoading = false;

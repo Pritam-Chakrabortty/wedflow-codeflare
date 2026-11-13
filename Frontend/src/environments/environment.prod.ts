@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://wedflow-codeflare.onrender.com/api'
+  apiUrl: 'https://wedflowcodeflare-2.onrender.com/api'
 };

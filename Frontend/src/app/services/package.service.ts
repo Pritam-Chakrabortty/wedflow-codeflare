@@ -58,7 +58,7 @@ export interface DeleteResponse {
   providedIn: 'root',
 })
 export class PackageService {
-  private apiUrl = 'https://wedflow-codeflare.onrender.com/api/packages';
+  private apiUrl = 'https://wedflowcodeflare-2.onrender.com/api/packages';
 
   constructor(private http: HttpClient) {}
 

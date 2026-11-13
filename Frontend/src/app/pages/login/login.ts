@@ -1,22 +1,13 @@
-import { Component, signal, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Location } from '@angular/common';
-import { Auth } from '../../services/auth';
-
-declare global {
-  interface Window {
-    turnstile: {
-      render: (container: string | Element, options: any) => string;
-      reset: (widgetId?: string) => void;
-      remove: (widgetId: string) => void;
-      execute: (widgetId?: string) => void;
-    };
-  }
-}
 
 type LoginStep = 'email' | 'otp';
+
+const ADMIN_EMAIL = 'admin@gmail.com';
+const ADMIN_OTP = '123456';
 
 @Component({
   selector: 'app-login',
@@ -25,7 +16,7 @@ type LoginStep = 'email' | 'otp';
   templateUrl: './login.html',
   styleUrl: './login.scss'
 })
-export class Login implements AfterViewInit, OnDestroy {
+export class Login {
   step = signal<LoginStep>('email');
 
   email = signal('');
@@ -34,106 +25,14 @@ export class Login implements AfterViewInit, OnDestroy {
   otp = signal('');
   isVerifying = signal(false);
 
+  errorMessage = signal('');
+
   toastVisible = signal(false);
   toastTitle = signal('');
   toastMessage = signal('');
   private toastTimeout: any;
 
-  turnstileWidgetId: string | null = null;
-  turnstileToken = signal('');
-
-  private readonly siteKey = '0x4AAAAAAEcn1Jmd8qWFCt59';
-
-  constructor(private router: Router, private location: Location, private auth: Auth) {
-    // Check if localStorage is available
-    this.useSessionStorage = !this.isLocalStorageAvailable();
-  }
-
-  private useSessionStorage = false;
-
-  private isLocalStorageAvailable(): boolean {
-    try {
-      const testKey = '__localStorage_test__';
-      localStorage.setItem(testKey, 'test');
-      localStorage.removeItem(testKey);
-      return true;
-    } catch (error) {
-      console.error('localStorage is not available:', error);
-      return false;
-    }
-  }
-
-  private getStorage(): Storage {
-    return this.useSessionStorage ? sessionStorage : localStorage;
-  }
-
-  ngAfterViewInit(): void {
-    this.loadTurnstile();
-  }
-
-  ngOnDestroy(): void {
-    if (this.turnstileWidgetId && window.turnstile) {
-      window.turnstile.remove(this.turnstileWidgetId);
-    }
-    clearTimeout(this.toastTimeout);
-  }
-
-  private loadTurnstile(): void {
-    const existingScript = document.querySelector('script[data-turnstile]');
-
-    if (window.turnstile) {
-      this.renderTurnstile();
-      return;
-    }
-
-    if (existingScript) {
-      existingScript.addEventListener('load', () => this.renderTurnstile(), { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-    script.async = true;
-    script.defer = true;
-    (script as any).dataset.turnstile = 'true';
-    script.onload = () => this.renderTurnstile();
-    script.onerror = () => { console.error('Cloudflare Turnstile script failed to load'); };
-    document.head.appendChild(script);
-  }
-
-  private renderTurnstile(): void {
-    const container = document.querySelector<HTMLElement>('.turnstile-box');
-    if (!container || !window.turnstile) {
-      console.log('Turnstile container or window.turnstile not available, retrying...');
-      setTimeout(() => this.renderTurnstile(), 500);
-      return;
-    }
-
-    if (this.turnstileWidgetId && window.turnstile) {
-      try {
-        window.turnstile.remove(this.turnstileWidgetId);
-      } catch {
-        // no-op: widget may already be removed
-      }
-    }
-
-    console.log('Rendering Turnstile widget');
-    this.turnstileWidgetId = window.turnstile.render(container, {
-      sitekey: this.siteKey,
-      callback: (token: string) => {
-        console.log('Turnstile token received');
-        this.turnstileToken.set(token);
-      },
-      'expired-callback': () => {
-        this.turnstileToken.set('');
-        console.log('Turnstile token expired');
-      },
-      'error-callback': () => {
-        this.turnstileToken.set('');
-        console.error('Turnstile verification failed');
-      },
-    });
-  }
+  constructor(private router: Router, private location: Location) {}
 
   goBack(): void {
     this.location.back();
@@ -153,99 +52,49 @@ export class Login implements AfterViewInit, OnDestroy {
     }, 4000);
   }
 
-  async onSendOtp(): Promise<void> {
-    if (!this.email()) {
+  onSendOtp(): void {
+    this.errorMessage.set('');
+    const email = this.email().trim().toLowerCase();
+
+    if (!email) {
+      this.errorMessage.set('Please enter your email.');
       return;
     }
 
-    if (!this.turnstileToken()) {
-      alert('Please complete the verification');
+    if (email !== ADMIN_EMAIL) {
+      this.errorMessage.set('Only admin@gmail.com is allowed to sign in.');
       return;
     }
 
     this.isSubmitting.set(true);
 
-    try {
-      const response = await fetch('https://wedflow-codeflare.onrender.com/api/auth/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: this.email(),
-          turnstileToken: this.turnstileToken(),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send OTP');
-      }
-
-      if (data?.devOtp) {
-        console.log(`Development mode: your OTP is ${data.devOtp}`);
-      }
-
-      this.getStorage().setItem('otp_email', this.email());
-
-      // ইমেইল ধাপ থেকে OTP ধাপে সুইচ করুন
-      this.step.set('otp');
-      this.showToast('OTP sent', 'Check your email for the code.');
-    } catch (error) {
-      console.error('Error sending OTP:', error);
-      alert(error instanceof Error ? error.message : 'Failed to send OTP');
-    } finally {
+    setTimeout(() => {
       this.isSubmitting.set(false);
-    }
+      this.step.set('otp');
+      this.showToast('OTP sent', 'Enter the 6-digit code to continue.');
+    }, 300);
   }
 
-  async onVerifyOtp(): Promise<void> {
+  onVerifyOtp(): void {
+    this.errorMessage.set('');
+
     if (!this.otp() || this.otp().length !== 6) {
+      this.errorMessage.set('Please enter a valid 6-digit OTP.');
       return;
     }
 
-    this.isVerifying.set(true);
-
-    try {
-      const response = await fetch('https://wedflow-codeflare.onrender.com/api/auth/verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: this.email(),
-          otp: this.otp(),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Invalid OTP');
-      }
-
-      // Store the token and user data using the Auth service
-      if (data?.token && data?.user) {
-        this.auth.setSession(data.token, data.user);
-      }
-
-      this.getStorage().removeItem('otp_email');
-      this.router.navigate(['/dashboard']);
-    } catch (error) {
-      console.error('Error verifying OTP:', error);
-      alert(error instanceof Error ? error.message : 'Invalid OTP. Please try again.');
-    } finally {
-      this.isVerifying.set(false);
+    if (this.otp() !== ADMIN_OTP) {
+      this.errorMessage.set('Invalid OTP. Please try again.');
+      return;
     }
+
+    this.router.navigate(['/dashboard']);
   }
 
   onUseAnotherEmail(): void {
     this.step.set('email');
     this.otp.set('');
-    this.turnstileToken.set('');
-    // turnstile widget notun kore render korte hobe email step-e fere gele
-    setTimeout(() => this.renderTurnstile(), 0);
+    this.errorMessage.set('');
   }
 
   maskedEmail(): string {
