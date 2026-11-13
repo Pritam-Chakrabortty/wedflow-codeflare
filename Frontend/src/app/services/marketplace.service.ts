@@ -73,7 +73,7 @@ export interface UpdateWorkRequestRequest {
   providedIn: 'root',
 })
 export class MarketplaceService {
-  private apiUrl = 'https://wedflow-codeflare.onrender.com/api';
+  private apiUrl = 'https://wedflowcodeflare-2.onrender.com/api';
 
   constructor(private http: HttpClient) {}
 

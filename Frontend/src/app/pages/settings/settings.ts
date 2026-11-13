@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { StudioBranding } from './studio-branding/studio-branding';
 import { AutomationRules } from './automation-rules/automation-rules';
 import { EmailStudio } from './email-studio/email-studio';
-import { Auth } from '../../services/auth';
 import { environment } from '../../../environments/environment';
 
 interface SettingsCard {
@@ -79,7 +78,7 @@ export class Settings implements OnInit {
     },
   ]);
 
-  constructor(private auth: Auth) {}
+  constructor() {}
 
   ngOnInit(): void {
     this.loadWorkspaceSettings();
@@ -90,14 +89,8 @@ export class Settings implements OnInit {
       this.isLoading.set(true);
       this.error.set(null);
 
-      const token = this.auth.getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
       const response = await fetch(`${environment.apiUrl}/workspace/settings`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       });
@@ -171,15 +164,9 @@ export class Settings implements OnInit {
 
   async onBrandingSaved(newLogoUrl: string | null): Promise<void> {
     try {
-      const token = this.auth.getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
       const response = await fetch(`${environment.apiUrl}/workspace/settings`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ logoUrl: newLogoUrl }),
@@ -201,15 +188,9 @@ export class Settings implements OnInit {
 
   async onAutomationSaved(newDays: number): Promise<void> {
     try {
-      const token = this.auth.getToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
       const response = await fetch(`${environment.apiUrl}/workspace/settings`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ crewAssignmentDays: newDays }),

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
 
 export interface AuthUser {
   id: number | string;
@@ -15,17 +16,19 @@ export interface AuthUser {
   staffName?: string | null;
 }
 
+const ADMIN_EMAIL = 'admin@gmail.com';
+const ADMIN_OTP = '123456';
+
 @Injectable({
   providedIn: 'root',
 })
 export class Auth {
   private readonly storageKey = 'wedflow_auth';
+  private pendingSession: Promise<void> | null = null;
   private useSessionStorage = false;
 
   constructor() {
-    // Check if localStorage is available, fallback to sessionStorage
     if (!this.isLocalStorageAvailable()) {
-      console.warn('localStorage not available, using sessionStorage as fallback');
       this.useSessionStorage = true;
     }
   }
@@ -37,26 +40,17 @@ export class Auth {
   setSession(token: string, user: AuthUser): void {
     try {
       this.getStorage().setItem(this.storageKey, JSON.stringify({ token, user }));
-      console.log('Session saved successfully to', this.useSessionStorage ? 'sessionStorage' : 'localStorage');
     } catch (error) {
-      console.error('Failed to save session to storage:', error);
-      console.warn('This might be due to private mode or storage being disabled');
+      console.error('Failed to save session:', error);
     }
   }
 
   getSession(): { token: string; user: AuthUser } | null {
     try {
       const raw = this.getStorage().getItem(this.storageKey);
-      if (!raw) {
-        console.log('No session found in storage');
-        return null;
-      }
-
-      const session = JSON.parse(raw) as { token: string; user: AuthUser };
-      console.log('Session retrieved successfully from', this.useSessionStorage ? 'sessionStorage' : 'localStorage');
-      return session;
-    } catch (error) {
-      console.error('Failed to retrieve session from storage:', error);
+      if (!raw) return null;
+      return JSON.parse(raw) as { token: string; user: AuthUser };
+    } catch {
       this.clearSession();
       return null;
     }
@@ -71,27 +65,53 @@ export class Auth {
   }
 
   isAuthenticated(): boolean {
-    const session = this.getSession();
-    if (!session?.token) {
-      return false;
-    }
-
-    try {
-      const payload = JSON.parse(atob(session.token.split('.')[1] || ''));
-      return typeof payload?.exp === 'number' ? payload.exp * 1000 > Date.now() : true;
-    } catch {
-      this.clearSession();
-      return false;
-    }
+    return !!this.getToken();
   }
 
   clearSession(): void {
     try {
       this.getStorage().removeItem(this.storageKey);
-      console.log('Session cleared successfully from', this.useSessionStorage ? 'sessionStorage' : 'localStorage');
     } catch (error) {
-      console.error('Failed to clear session from storage:', error);
+      console.error('Failed to clear session:', error);
     }
+  }
+
+  // Signs in silently with the fixed credentials to obtain a real backend token,
+  // so the app loads data without asking the user to log in.
+  ensureSession(): Promise<void> {
+    if (this.getToken()) {
+      return Promise.resolve();
+    }
+
+    if (this.pendingSession) {
+      return this.pendingSession;
+    }
+
+    this.pendingSession = (async () => {
+      try {
+        const response = await fetch(`${environment.apiUrl}/auth/verify-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: ADMIN_EMAIL, otp: ADMIN_OTP }),
+        });
+
+        if (!response.ok) {
+          console.warn('Auto sign-in failed with status', response.status);
+          return;
+        }
+
+        const data = await response.json();
+        if (data?.token && data?.user) {
+          this.setSession(data.token, data.user);
+        }
+      } catch (error) {
+        console.warn('Auto sign-in request failed:', error);
+      } finally {
+        this.pendingSession = null;
+      }
+    })();
+
+    return this.pendingSession;
   }
 
   isLocalStorageAvailable(): boolean {
@@ -100,8 +120,7 @@ export class Auth {
       localStorage.setItem(testKey, 'test');
       localStorage.removeItem(testKey);
       return true;
-    } catch (error) {
-      console.error('localStorage is not available:', error);
+    } catch {
       return false;
     }
   }

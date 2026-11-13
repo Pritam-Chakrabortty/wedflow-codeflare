@@ -29,7 +29,7 @@ export class WorkBriefModal {
   @Output() briefSubmitted = new EventEmitter<WorkRequest>();
 
   private http = inject(HttpClient);
-  private apiUrl = 'https://wedflow-codeflare.onrender.com/api';
+  private apiUrl = 'https://wedflowcodeflare-2.onrender.com/api';
 
   isSubmitting = false;
   errorMessage: string | null = null;

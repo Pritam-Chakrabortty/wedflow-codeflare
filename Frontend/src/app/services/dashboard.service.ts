@@ -50,7 +50,7 @@ export interface DashboardCalendarResponse {
   providedIn: 'root'
 })
 export class DashboardService {
-  private apiUrl = 'https://wedflow-codeflare.onrender.com/api/dashboard';
+  private apiUrl = 'https://wedflowcodeflare-2.onrender.com/api/dashboard';
 
    // backend ready hole eta false kore dilei real PATCH call hobe
   private mockReschedule = true;

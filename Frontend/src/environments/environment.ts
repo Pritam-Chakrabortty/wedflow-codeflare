@@ -1,5 +1,5 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://wedflow-codeflare.onrender.com/api'
+  apiUrl: 'https://wedflowcodeflare-2.onrender.com/api'
 };
 
